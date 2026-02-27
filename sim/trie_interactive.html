@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Trie Interactive – Insert / Search / Prefix</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#101a33; --text:#e8ecff; --muted:#a9b3d6;
+      --accent:#7aa2ff; --good:#2ee59d; --warn:#ffcc66; --bad:#ff6b6b;
+      --edge:#9aa7d6; --shadow:0 12px 30px rgba(0,0,0,.35); --radius:16px; --stroke:rgba(255,255,255,.08);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);color:var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, #172a63 0%, var(--bg) 55%) fixed;}
+    header{max-width:1350px;margin:0 auto;padding:20px 18px 10px}
+    h1{margin:0 0 6px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.4}
+
+    .layout{max-width:1350px;margin:0 auto;padding:12px 18px 22px;display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .card h2{margin:0;font-size:14px;padding:12px 14px;border-bottom:1px solid var(--stroke);background:rgba(0,0,0,.12);color:#dfe6ff}
+    .content{padding:12px 14px}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button{
+      cursor:pointer;border:1px solid rgba(255,255,255,.12);
+      background: rgba(122,162,255,.14); color:var(--text);
+      border-radius:12px;padding:8px 10px;font-weight:800;font-size:13px;
+      transition:transform .06s ease, background .2s ease; white-space:nowrap;
+    }
+    button:hover{background:rgba(122,162,255,.22)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.08)}
+    button.secondary:hover{background:rgba(255,255,255,.12)}
+    button.danger{background:rgba(255,107,107,.16)}
+    button.danger:hover{background:rgba(255,107,107,.22)}
+    button.good{background:rgba(46,229,157,.16)}
+    button.good:hover{background:rgba(46,229,157,.24)}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      font-size:12px;color:#dfe6ff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.18)}
+    .mono{font-family:var(--mono);font-size:12px}
+    input[type="checkbox"]{transform:translateY(1px)}
+    .speed{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+    input[type="range"]{width:170px}
+
+    textarea{
+      width:100%;min-height:195px;resize:vertical;padding:10px 12px;border-radius:12px;
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);
+      color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.45;outline:none;
+    }
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .box{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;
+      max-height:320px;overflow:auto;
+    }
+    pre{margin:0;padding:12px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid var(--stroke);
+      overflow:auto;max-height:420px;font-family:var(--mono);font-size:12px;line-height:1.45}
+    .err{color:var(--bad);font-size:12px;margin-top:8px;display:none}
+
+    .svgWrap{padding:12px 14px 14px}
+    svg{width:100%;height:auto;display:block;background:rgba(0,0,0,.10);border:1px solid var(--stroke);border-radius:14px}
+
+    .edge{stroke:var(--edge);stroke-width:2.7;opacity:.85;transition:stroke .2s,opacity .2s,stroke-width .2s}
+    .edge.active{stroke:var(--warn);opacity:1;stroke-width:4.5}
+    .edge.hit{stroke:var(--good);opacity:1;stroke-width:4.5}
+    .edge.fail{stroke:var(--bad);opacity:.85;stroke-dasharray:6 6;stroke-width:4}
+
+    .eLabel{fill:#eef2ff;font-size:12px;font-family:var(--mono);opacity:.95}
+
+    .node circle{fill:rgba(27,43,87,.92);stroke:rgba(111,134,255,.9);stroke-width:3;transition:stroke .2s,filter .2s,opacity .2s}
+    .node text{font-family:var(--mono);fill:#eef2ff}
+    .node .id{font-weight:900;font-size:12px}
+    .node .meta{font-size:11px;fill:#cfd7ff}
+    .node.active circle{stroke:rgba(255,204,102,.95);filter:drop-shadow(0 0 10px rgba(255,204,102,.18))}
+    .node.hit circle{stroke:rgba(46,229,157,.95);filter:drop-shadow(0 0 10px rgba(46,229,157,.16))}
+    .node.fail circle{stroke:rgba(255,107,107,.95);filter:drop-shadow(0 0 10px rgba(255,107,107,.14))}
+    .node.off{opacity:.28}
+
+    .endMark{fill:rgba(46,229,157,.22);stroke:rgba(46,229,157,.75);stroke-width:2}
+
+    .formula{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;line-height:1.45;
+    }
+    .tagOk{color:var(--good);font-weight:900}
+    .tagSkip{color:var(--muted);font-weight:900}
+    .tagNo{color:var(--bad);font-weight:900}
+    .tagDo{color:var(--warn);font-weight:900}
+
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .grid2,.grid3{grid-template-columns:1fr}
+      .speed{margin-left:0;width:100%;justify-content:space-between}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Trie – Insert / Search / Prefix</h1>
+  <div class="sub">
+    Trie: mỗi cạnh là 1 ký tự. Insert tạo node nếu chưa có. Search: đi theo ký tự; cuối cùng kiểm tra endWord. Prefix: chỉ cần đi hết prefix.
+  </div>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <section class="card">
+    <h2>Hình động & trạng thái</h2>
+    <div class="svgWrap">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnPlay">▶ Play</button>
+        <button id="btnStep" class="secondary">⏭ Step</button>
+        <button id="btnReset" class="danger">↺ Reset</button>
+
+        <button id="btnAuto" class="good">🎓 Auto Demo</button>
+        <button id="btnCont" class="secondary" disabled>▶ Continue</button>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="pauseOnChar" checked />
+          Pause on char
+        </label>
+
+        <div class="speed">
+          <span>Tốc độ</span>
+          <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1.2" />
+          <span class="badge"><span class="dot"></span><span id="speedText">1.2x</span></span>
+        </div>
+      </div>
+
+      <div class="row" style="margin-bottom:10px">
+        <span class="badge"><span class="dot"></span> op=<b id="opLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:var(--warn);box-shadow:0 0 0 3px rgba(255,204,102,.18)"></span>
+          at=<b id="atLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.12)"></span>
+          step <b id="stepIdx">0</b>/<b id="stepTotal">0</b></span>
+        <span class="badge"><span class="dot" style="background:var(--good);box-shadow:0 0 0 3px rgba(46,229,157,.18)"></span>
+          action <b id="actionLabel">—</b></span>
+      </div>
+
+      <div class="formula" id="formulaBox"></div>
+
+      <div style="height:12px"></div>
+
+      <svg id="svg" viewBox="0 0 1100 640">
+        <defs>
+          <marker id="arrowSmall" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255,255,255,.25)"></path>
+          </marker>
+        </defs>
+        <g id="edges"></g>
+        <g id="labels"></g>
+        <g id="nodes"></g>
+      </svg>
+
+      <div style="height:12px"></div>
+
+      <div class="grid3">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Words inserted</div>
+          <div id="wordsBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Log</div>
+          <div id="log" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Results</div>
+          <div id="resBox" class="box"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="card">
+    <h2>Input + C++ code</h2>
+    <div class="content">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnRun">⚙ Run</button>
+        <button id="btnLoadSample" class="secondary">📥 Load sample</button>
+
+        <span class="badge"><span class="dot"></span>
+          Ops: <span class="mono">I word</span>, <span class="mono">S word</span>, <span class="mono">P prefix</span>
+        </span>
+      </div>
+
+      <textarea id="inputArea" spellcheck="false"></textarea>
+      <div id="err" class="err"></div>
+
+      <div style="margin-top:12px">
+        <div class="muted" style="font-size:12px;margin:0 0 6px">C++ reference</div>
+        <pre id="cpp"></pre>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+document.getElementById('cpp').textContent =
+`// Trie (lowercase a-z) - insert, search, startsWith
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Trie{
+  struct Node{
+    int nxt[26];
+    bool end=false;
+    Node(){ memset(nxt, -1, sizeof(nxt)); }
+  };
+  vector<Node> tr;
+  Trie(){ tr.push_back(Node()); } // root=0
+
+  void insert(const string& s){
+    int u=0;
+    for(char c: s){
+      int x=c-'a';
+      if(tr[u].nxt[x]==-1){
+        tr[u].nxt[x]=tr.size();
+        tr.push_back(Node());
+      }
+      u=tr[u].nxt[x];
+    }
+    tr[u].end=true;
+  }
+
+  bool search(const string& s){
+    int u=0;
+    for(char c: s){
+      int x=c-'a';
+      if(tr[u].nxt[x]==-1) return false;
+      u=tr[u].nxt[x];
+    }
+    return tr[u].end;
+  }
+
+  bool startsWith(const string& p){
+    int u=0;
+    for(char c: p){
+      int x=c-'a';
+      if(tr[u].nxt[x]==-1) return false;
+      u=tr[u].nxt[x];
+    }
+    return true;
+  }
+};`;
+
+const SAMPLE =
+`# Insert
+I cat
+I car
+I cart
+I dog
+I dot
+I dove
+# Search
+S car
+S cab
+S cart
+S do
+# Prefix
+P ca
+P dov
+P z`;
+
+document.getElementById('inputArea').value = SAMPLE;
+
+/* ===== Trie model for visualization =====
+node: {id, end, children: Map<char, childId>, depth, x,y}
+layout: simple layered tidy-ish: each depth as row, nodes spaced by order in DFS
+========================================= */
+
+let trie=null;        // {nodes:[], root=0}
+let model=null;       // {ops:[]}
+let actions=[];
+let idx=0;
+
+let playing=false;
+let timer=null;
+
+let lecture=false;
+let waiting=false;
+let cont=false;
+
+const svgEdges=document.getElementById("edges");
+const svgLabels=document.getElementById("labels");
+const svgNodes=document.getElementById("nodes");
+
+function showErr(msg){
+  const el=document.getElementById("err");
+  if(!msg){ el.style.display="none"; el.textContent=""; return; }
+  el.style.display="block"; el.textContent=msg;
+}
+
+function parseOps(txt){
+  const lines=txt.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>0 && !s.startsWith("#"));
+  const ops=[];
+  for(let i=0;i<lines.length;i++){
+    const parts=lines[i].split(/\s+/);
+    const t=parts[0];
+    if(!["I","S","P"].includes(t)) throw new Error(`Dòng ${i+1}: dùng I/S/P`);
+    if(parts.length<2) throw new Error(`Dòng ${i+1}: thiếu word/prefix`);
+    const s=parts[1].toLowerCase();
+    if(!/^[a-z]+$/.test(s)) throw new Error(`Dòng ${i+1}: chỉ hỗ trợ a-z (lowercase)`);
+    ops.push({t, s});
+  }
+  return {ops};
+}
+
+function initTrie(){
+  trie={nodes:[]};
+  trie.nodes.push({id:0, end:false, children:new Map(), depth:0, x:0, y:0});
+}
+
+function ensureChild(u, ch){
+  const node=trie.nodes[u];
+  if(!node.children.has(ch)){
+    const id=trie.nodes.length;
+    node.children.set(ch, id);
+    trie.nodes.push({id, end:false, children:new Map(), depth:node.depth+1, x:0, y:0});
+  }
+  return node.children.get(ch);
+}
+
+function computeLayout(){
+  // simple DFS order; space nodes horizontally by traversal index, depth by level
+  const levels=[];
+  const order=[];
+  function dfs(u){
+    const node=trie.nodes[u];
+    if(!levels[node.depth]) levels[node.depth]=[];
+    levels[node.depth].push(u);
+    order.push(u);
+    const keys=[...node.children.keys()].sort();
+    for(const ch of keys) dfs(node.children.get(ch));
+  }
+  dfs(0);
+
+  // assign x positions by leaf order using "inorder-ish"
+  let xCounter=0;
+  const xPos=Array(trie.nodes.length).fill(0);
+  function dfs2(u){
+    const node=trie.nodes[u];
+    const kids=[...node.children.keys()].sort().map(ch=>node.children.get(ch));
+    if(kids.length===0){
+      xPos[u]=xCounter++;
+      return xPos[u];
+    }
+    let minX=Infinity, maxX=-Infinity;
+    for(const v of kids){
+      const xv=dfs2(v);
+      minX=Math.min(minX,xv);
+      maxX=Math.max(maxX,xv);
+    }
+    xPos[u]=(minX+maxX)/2;
+    return xPos[u];
+  }
+  dfs2(0);
+
+  const maxDepth = Math.max(...trie.nodes.map(n=>n.depth));
+  const W=1100, H=640;
+  const padX=70, padY=70;
+  const depthH = maxDepth===0 ? 0 : (H-2*padY)/maxDepth;
+
+  // scale xPos to [padX..W-padX]
+  const maxX = Math.max(...xPos);
+  const scale = maxX===0 ? 0 : (W-2*padX)/maxX;
+
+  for(let u=0; u<trie.nodes.length; u++){
+    const node=trie.nodes[u];
+    node.x = padX + xPos[u]*scale;
+    node.y = padY + node.depth*depthH;
+  }
+}
+
+function drawTrie(highlight){
+  // highlight = {nodeActive, nodeHit, nodeFail, edgeActive:{u,v}, edgeHit:{u,v}, edgeFail:{u,v}, off:Set<int>}
+  svgEdges.innerHTML=""; svgLabels.innerHTML=""; svgNodes.innerHTML="";
+
+  // edges
+  for(const uNode of trie.nodes){
+    const u=uNode.id;
+    const keys=[...uNode.children.keys()].sort();
+    for(const ch of keys){
+      const v=uNode.children.get(ch);
+      const vNode=trie.nodes[v];
+
+      const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+      ln.setAttribute("x1",uNode.x); ln.setAttribute("y1",uNode.y);
+      ln.setAttribute("x2",vNode.x); ln.setAttribute("y2",vNode.y);
+      ln.setAttribute("class","edge");
+      ln.setAttribute("id",`e-${u}-${v}`);
+
+      // class highlight
+      if(highlight?.edgeFail && highlight.edgeFail.u===u && highlight.edgeFail.v===v) ln.classList.add("fail");
+      if(highlight?.edgeHit && highlight.edgeHit.u===u && highlight.edgeHit.v===v) ln.classList.add("hit");
+      if(highlight?.edgeActive && highlight.edgeActive.u===u && highlight.edgeActive.v===v) ln.classList.add("active");
+
+      svgEdges.appendChild(ln);
+
+      // label
+      const mx=(uNode.x+vNode.x)/2, my=(uNode.y+vNode.y)/2;
+      const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+      t.setAttribute("x",mx); t.setAttribute("y",my-6);
+      t.setAttribute("text-anchor","middle");
+      t.setAttribute("class","eLabel");
+      t.textContent=ch;
+      svgLabels.appendChild(t);
+    }
+  }
+
+  // nodes
+  for(const node of trie.nodes){
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("class","node");
+    g.setAttribute("id",`n-${node.id}`);
+
+    if(highlight?.off?.has(node.id)) g.classList.add("off");
+    if(highlight?.nodeFail===node.id) g.classList.add("fail");
+    if(highlight?.nodeHit===node.id) g.classList.add("hit");
+    if(highlight?.nodeActive===node.id) g.classList.add("active");
+
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",node.x); c.setAttribute("cy",node.y);
+    c.setAttribute("r",22);
+    g.appendChild(c);
+
+    // end marker (small ring)
+    if(node.end){
+      const m=document.createElementNS("http://www.w3.org/2000/svg","circle");
+      m.setAttribute("cx",node.x); m.setAttribute("cy",node.y);
+      m.setAttribute("r",14);
+      m.setAttribute("class","endMark");
+      g.appendChild(m);
+    }
+
+    const t1=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t1.setAttribute("x",node.x); t1.setAttribute("y",node.y+4);
+    t1.setAttribute("text-anchor","middle");
+    t1.setAttribute("class","id");
+    t1.textContent = node.id===0 ? "root" : String(node.id);
+    g.appendChild(t1);
+
+    const t2=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t2.setAttribute("x",node.x); t2.setAttribute("y",node.y+34);
+    t2.setAttribute("text-anchor","middle");
+    t2.setAttribute("class","meta");
+    t2.textContent = node.end ? "end=1" : "end=0";
+    g.appendChild(t2);
+
+    svgNodes.appendChild(g);
+  }
+}
+
+function makeActions(){
+  const acts=[];
+  const inserted=new Set();
+
+  function snap(type, extra={}){
+    acts.push({
+      type,
+      opText: extra.opText ?? "",
+      u: extra.u ?? -1,
+      v: extra.v ?? -1,
+      ch: extra.ch ?? "",
+      pos: extra.pos ?? -1,
+      ok: extra.ok,
+      msg: extra.msg || type,
+      // snapshots (store minimal; trie is global but we rebuild highlight + draw using current trie)
+      inserted: [...inserted].sort()
+    });
+  }
+
+  snap("init",{msg:"Init trie with root node."});
+
+  for(const op of model.ops){
+    const opText=`${op.t} ${op.s}`;
+    snap("op_start",{opText,msg:`Start ${opText}`});
+
+    if(op.t==="I"){
+      let u=0;
+      snap("walk_start",{opText,u,pos:0,msg:`Insert: start at root`});
+      for(let i=0;i<op.s.length;i++){
+        const ch=op.s[i];
+        const node=trie.nodes[u];
+        const has=node.children.has(ch);
+        snap("char",{opText,u,ch,pos:i,msg:`At node ${u}, process '${ch}'`});
+        if(!has){
+          const v=ensureChild(u,ch);
+          snap("create",{opText,u,v,ch,pos:i,msg:`Create node ${v} via '${ch}' from ${u}`});
+          u=v;
+        }else{
+          const v=node.children.get(ch);
+          snap("follow",{opText,u,v,ch,pos:i,msg:`Follow edge '${ch}' to node ${v}`});
+          u=v;
+        }
+      }
+      trie.nodes[u].end=true;
+      inserted.add(op.s);
+      snap("mark_end",{opText,u,msg:`Mark end=1 at node ${u} for word '${op.s}'`});
+      snap("op_done",{opText,ok:true,msg:`Done insert '${op.s}'`});
+    }
+
+    if(op.t==="S"){
+      let u=0;
+      let ok=true;
+      snap("walk_start",{opText,u,pos:0,msg:`Search: start at root`});
+      for(let i=0;i<op.s.length;i++){
+        const ch=op.s[i];
+        const node=trie.nodes[u];
+        snap("char",{opText,u,ch,pos:i,msg:`At node ${u}, need '${ch}'`});
+        if(!node.children.has(ch)){
+          ok=false;
+          snap("fail",{opText,u,ch,pos:i,msg:`FAIL: no edge '${ch}' from node ${u}`});
+          break;
+        }
+        const v=node.children.get(ch);
+        snap("follow",{opText,u,v,ch,pos:i,msg:`Follow '${ch}' to node ${v}`});
+        u=v;
+      }
+      if(ok){
+        if(trie.nodes[u].end){
+          snap("found",{opText,u,ok:true,msg:`FOUND: end=1 at node ${u}`});
+          snap("op_done",{opText,ok:true,msg:`S '${op.s}' => YES`});
+        }else{
+          snap("not_end",{opText,u,ok:false,msg:`Reached node ${u} but end=0`});
+          snap("op_done",{opText,ok:false,msg:`S '${op.s}' => NO`});
+        }
+      }else{
+        snap("op_done",{opText,ok:false,msg:`S '${op.s}' => NO`});
+      }
+    }
+
+    if(op.t==="P"){
+      let u=0;
+      let ok=true;
+      snap("walk_start",{opText,u,pos:0,msg:`Prefix: start at root`});
+      for(let i=0;i<op.s.length;i++){
+        const ch=op.s[i];
+        const node=trie.nodes[u];
+        snap("char",{opText,u,ch,pos:i,msg:`At node ${u}, need '${ch}'`});
+        if(!node.children.has(ch)){
+          ok=false;
+          snap("fail",{opText,u,ch,pos:i,msg:`FAIL: no edge '${ch}' from node ${u}`});
+          break;
+        }
+        const v=node.children.get(ch);
+        snap("follow",{opText,u,v,ch,pos:i,msg:`Follow '${ch}' to node ${v}`});
+        u=v;
+      }
+      snap("op_done",{opText,ok,msg:`P '${op.s}' => ${ok?"YES":"NO"}`});
+    }
+  }
+
+  snap("done",{msg:"All operations completed."});
+  return acts;
+}
+
+function highlightForAction(a){
+  const hi={
+    nodeActive:null, nodeHit:null, nodeFail:null,
+    edgeActive:null, edgeHit:null, edgeFail:null,
+    off:new Set()
+  };
+
+  // default: show all nodes normally
+  if(a.type==="char"){
+    hi.nodeActive=a.u;
+  }
+  if(a.type==="follow"){
+    hi.nodeActive=a.v;
+    hi.edgeActive={u:a.u, v:a.v};
+  }
+  if(a.type==="create"){
+    hi.nodeActive=a.v;
+    hi.edgeHit={u:a.u, v:a.v};
+  }
+  if(a.type==="mark_end"){
+    hi.nodeHit=a.u;
+  }
+  if(a.type==="fail"){
+    hi.nodeFail=a.u;
+    // edgeFail not known (missing), so just nodeFail
+  }
+  if(a.type==="found"){
+    hi.nodeHit=a.u;
+  }
+  if(a.type==="not_end"){
+    hi.nodeFail=a.u;
+  }
+
+  return hi;
+}
+
+function renderFormula(a){
+  const box=document.getElementById("formulaBox");
+  if(a.opText.startsWith("I ")){
+    box.innerHTML =
+      `<b>INSERT</b>\n`+
+      `Duyệt từng ký tự. Nếu chưa có cạnh -> tạo node mới.\n`+
+      `Cuối cùng: end=1.\n`+
+      (a.type==="mark_end" ? `<span class="tagOk">word inserted</span>` : `<span class="tagDo">step: ${a.type}</span>`);
+    return;
+  }
+  if(a.opText.startsWith("S ")){
+    box.innerHTML =
+      `<b>SEARCH</b>\n`+
+      `Đi theo từng ký tự. Nếu thiếu cạnh -> FAIL.\n`+
+      `Nếu đi hết: trả về end==1.\n`+
+      (a.type==="op_done" ? (a.ok?`<span class="tagOk">YES</span>`:`<span class="tagNo">NO</span>`) : `<span class="tagDo">step: ${a.type}</span>`);
+    return;
+  }
+  if(a.opText.startsWith("P ")){
+    box.innerHTML =
+      `<b>PREFIX</b>\n`+
+      `Chỉ cần đi hết prefix. Không cần end=1.\n`+
+      (a.type==="op_done" ? (a.ok?`<span class="tagOk">YES</span>`:`<span class="tagNo">NO</span>`) : `<span class="tagDo">step: ${a.type}</span>`);
+    return;
+  }
+  box.innerHTML = `Trie operations.`;
+}
+
+function outputsSoFar(){
+  const arr=[];
+  for(let k=0;k<=idx;k++){
+    const a=actions[k];
+    if(a.type==="op_done" && (a.opText.startsWith("S ") || a.opText.startsWith("P "))){
+      arr.push(`${a.opText} => ${a.ok?"YES":"NO"}`);
+    }
+  }
+  return arr;
+}
+
+function renderAction(i){
+  idx=Math.max(0, Math.min(i, actions.length-1));
+  const a=actions[idx];
+
+  document.getElementById("stepIdx").textContent=idx;
+  document.getElementById("stepTotal").textContent=Math.max(0, actions.length-1);
+  document.getElementById("actionLabel").textContent=a.type;
+
+  document.getElementById("opLabel").textContent = a.opText || "—";
+  if(a.type==="char") document.getElementById("atLabel").textContent = `node=${a.u}, ch='${a.ch}', pos=${a.pos}`;
+  else if(a.type==="follow" || a.type==="create") document.getElementById("atLabel").textContent = `edge ${a.u} -[${a.ch}]-> ${a.v}`;
+  else if(a.u!==-1) document.getElementById("atLabel").textContent = `node=${a.u}`;
+  else document.getElementById("atLabel").textContent = "—";
+
+  renderFormula(a);
+
+  // recompute layout every step (tree may grow)
+  computeLayout();
+  drawTrie(highlightForAction(a));
+
+  document.getElementById("wordsBox").textContent = a.inserted.length ? a.inserted.join("\n") : "(none)";
+
+  const log=document.getElementById("log");
+  log.textContent = actions.slice(0, idx+1).map((x,k)=>`${String(k).padStart(3,'0')}: ${x.msg}`).join("\n");
+  log.scrollTop=log.scrollHeight;
+
+  const done=outputsSoFar();
+  document.getElementById("resBox").textContent = done.length ? done.join("\n") : "(chưa có kết quả)";
+}
+
+function pauseAll(){
+  playing=false; lecture=false; waiting=false; cont=false;
+  document.getElementById("btnPlay").textContent="▶ Play";
+  document.getElementById("btnAuto").textContent="🎓 Auto Demo";
+  document.getElementById("btnCont").disabled=true;
+  if(timer){ clearTimeout(timer); timer=null; }
+}
+function nextIndex(){ return Math.min(actions.length-1, idx+1); }
+
+function playNormal(){
+  if(playing) return;
+  pauseAll();
+  playing=true;
+  document.getElementById("btnPlay").textContent="⏸ Pause";
+  tickNormal();
+}
+function tickNormal(){
+  if(!playing) return;
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(620/sp);
+  timer=setTimeout(()=>{
+    const next=nextIndex();
+    if(next>idx){ renderAction(next); tickNormal(); }
+    else pauseAll();
+  }, delay);
+}
+
+function startAuto(){
+  if(lecture) return;
+  pauseAll();
+  lecture=true;
+  document.getElementById("btnAuto").textContent="⏸ Stop Auto Demo";
+  tickAuto();
+}
+function tickAuto(){
+  if(!lecture) return;
+
+  if(waiting && !cont){
+    timer=setTimeout(tickAuto, 80);
+    return;
+  }
+  if(cont){
+    cont=false; waiting=false;
+    document.getElementById("btnCont").disabled=true;
+  }
+
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(560/sp);
+
+  timer=setTimeout(()=>{
+    const next=nextIndex();
+    if(next<=idx){ pauseAll(); return; }
+    const na=actions[next];
+    renderAction(next);
+
+    const pauseOnChar=document.getElementById("pauseOnChar").checked;
+    if(na && pauseOnChar && (na.type==="char" || na.type==="create" || na.type==="follow" || na.type==="fail" || na.type==="op_done")){
+      waiting=true;
+      document.getElementById("btnCont").disabled=false;
+      return;
+    }
+    tickAuto();
+  }, delay);
+}
+
+/* run */
+function runFromInput(){
+  pauseAll();
+  showErr("");
+  try{
+    model=parseOps(document.getElementById("inputArea").value);
+    initTrie();
+
+    // We build actions on-the-fly; but actions need trie mutations in order.
+    // Therefore: rebuild by executing ops while recording actions (makeActions mutates trie).
+    actions=[];
+    // rebuild again for safety
+    initTrie();
+    actions = (function(){
+      // Make actions mutates trie; fine.
+      return makeActions();
+    })();
+
+    idx=0;
+    renderAction(0);
+  }catch(e){
+    showErr(e.message || String(e));
+  }
+}
+function resetToStart(){
+  pauseAll();
+  if(actions.length){ idx=0; renderAction(0); }
+}
+
+/* wiring */
+document.getElementById("speed").addEventListener("input", e=>{
+  document.getElementById("speedText").textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+});
+document.getElementById("btnRun").addEventListener("click", runFromInput);
+document.getElementById("btnLoadSample").addEventListener("click", ()=>{
+  document.getElementById("inputArea").value=SAMPLE;
+  runFromInput();
+});
+document.getElementById("btnStep").addEventListener("click", ()=>{
+  pauseAll();
+  const next=nextIndex();
+  if(next>idx) renderAction(next);
+});
+document.getElementById("btnReset").addEventListener("click", resetToStart);
+document.getElementById("btnPlay").addEventListener("click", ()=>{
+  if(playing){ pauseAll(); return; }
+  playNormal();
+});
+document.getElementById("btnAuto").addEventListener("click", ()=>{
+  if(lecture){ pauseAll(); return; }
+  startAuto();
+});
+document.getElementById("btnCont").addEventListener("click", ()=>{
+  if(!lecture) return;
+  cont=true;
+});
+
+/* init */
+runFromInput();
+</script>
+</body>
+</html>

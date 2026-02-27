@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Thuật toán Loang (Flood Fill / BFS Grid) Interactive</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#101a33; --text:#e8ecff; --muted:#a9b3d6;
+      --accent:#7aa2ff; --good:#2ee59d; --warn:#ffcc66; --bad:#ff6b6b;
+      --shadow:0 12px 30px rgba(0,0,0,.35); --radius:16px; --stroke:rgba(255,255,255,.08);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);color:var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, #172a63 0%, var(--bg) 55%) fixed;}
+    header{max-width:1250px;margin:0 auto;padding:20px 18px 10px}
+    h1{margin:0 0 6px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.4}
+
+    .layout{max-width:1250px;margin:0 auto;padding:12px 18px 22px;display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .card h2{margin:0;font-size:14px;padding:12px 14px;border-bottom:1px solid var(--stroke);background:rgba(0,0,0,.12);color:#dfe6ff}
+    .content{padding:12px 14px}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button{
+      cursor:pointer;border:1px solid rgba(255,255,255,.12);
+      background: rgba(122,162,255,.14); color:var(--text);
+      border-radius:12px;padding:8px 10px;font-weight:800;font-size:13px;
+      transition:transform .06s ease, background .2s ease; white-space:nowrap;
+    }
+    button:hover{background:rgba(122,162,255,.22)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.08)}
+    button.secondary:hover{background:rgba(255,255,255,.12)}
+    button.danger{background:rgba(255,107,107,.16)}
+    button.danger:hover{background:rgba(255,107,107,.22)}
+    button.good{background:rgba(46,229,157,.16)}
+    button.good:hover{background:rgba(46,229,157,.24)}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      font-size:12px;color:#dfe6ff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.18)}
+    .mono{font-family:var(--mono);font-size:12px}
+    input[type="number"]{
+      width:70px;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);color:var(--text);font-family:var(--mono);
+    }
+    input[type="checkbox"], input[type="radio"]{transform:translateY(1px)}
+    .speed{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+    input[type="range"]{width:170px}
+
+    textarea{
+      width:100%;min-height:180px;resize:vertical;padding:10px 12px;border-radius:12px;
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);
+      color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.45;outline:none;
+    }
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .box{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;
+      max-height:260px;overflow:auto;
+    }
+    pre{margin:0;padding:12px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid var(--stroke);
+      overflow:auto;max-height:360px;font-family:var(--mono);font-size:12px;line-height:1.45}
+    .err{color:var(--bad);font-size:12px;margin-top:8px;display:none}
+
+    /* grid */
+    .gridWrap{
+      background:rgba(0,0,0,.10);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:12px;
+      overflow:auto;
+    }
+    .grid{
+      display:grid;
+      gap:2px;
+      justify-content:start;
+      align-content:start;
+    }
+    .cell{
+      width:26px;height:26px;
+      border-radius:6px;
+      display:flex;align-items:center;justify-content:center;
+      font-family:var(--mono);font-size:12px;
+      border:1px solid rgba(255,255,255,.06);
+      user-select:none;
+    }
+    .wall{background:rgba(255,255,255,.08); color:#cfd7ff}
+    .empty{background:rgba(122,162,255,.08); color:#dfe6ff}
+    .start{outline:2px solid rgba(122,162,255,.85); outline-offset:-2px}
+    .target{outline:2px solid rgba(255,204,102,.85); outline-offset:-2px}
+    .frontier{background:rgba(255,204,102,.12)}
+    .visited{background:rgba(169,179,214,.14)}
+    .path{background:rgba(46,229,157,.18); border-color:rgba(46,229,157,.5)}
+
+    table{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid var(--stroke);
+      background:rgba(0,0,0,.12);font-size:12px}
+    th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:left}
+    th{color:#cfd7ff;background:rgba(255,255,255,.05)}
+    tr:last-child td{border-bottom:none}
+
+    .formula{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;line-height:1.45;
+    }
+    .tagOk{color:var(--good);font-weight:900}
+    .tagSkip{color:var(--muted);font-weight:900}
+    .tagNo{color:var(--bad);font-weight:900}
+
+    @media (max-width:980px){
+      .layout{grid-template-columns:1fr}
+      .grid2,.grid3{grid-template-columns:1fr}
+      .speed{margin-left:0;width:100%;justify-content:space-between}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Thuật toán Loang (Flood Fill / BFS trên lưới)</h1>
+  <div class="sub">
+    Loang theo BFS: từ ô bắt đầu <b>S</b>, duyệt các ô kề (4 hoặc 8 hướng), tránh tường <b>#</b>.
+    Có hiển thị <b>queue</b>, <b>dist</b>, <b>parent</b> và tô <b>đường đi ngắn S→T</b> nếu tồn tại.
+  </div>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <section class="card">
+    <h2>Hình động lưới & trạng thái</h2>
+    <div class="content">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnPlay">▶ Play</button>
+        <button id="btnStep" class="secondary">⏭ Step</button>
+        <button id="btnReset" class="danger">↺ Reset</button>
+
+        <button id="btnAuto" class="good">🎓 Auto Demo</button>
+        <button id="btnCont" class="secondary" disabled>▶ Continue</button>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="pauseOnDeq" checked />
+          Pause on Dequeue
+        </label>
+
+        <label class="badge" style="gap:8px">
+          8 hướng
+          <input type="checkbox" id="use8" />
+        </label>
+
+        <div class="speed">
+          <span>Tốc độ</span>
+          <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1.2" />
+          <span class="badge"><span class="dot"></span><span id="speedText">1.2x</span></span>
+        </div>
+      </div>
+
+      <div class="row" style="margin-bottom:10px">
+        <span class="badge"><span class="dot"></span> u=<b id="uLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.12)"></span>
+          step <b id="stepIdx">0</b>/<b id="stepTotal">0</b></span>
+        <span class="badge"><span class="dot" style="background:var(--good);box-shadow:0 0 0 3px rgba(46,229,157,.18)"></span>
+          action <b id="actionLabel">—</b></span>
+      </div>
+
+      <div class="formula" id="formulaBox"></div>
+
+      <div style="height:12px"></div>
+
+      <div class="gridWrap">
+        <div id="grid" class="grid"></div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="grid3">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Queue (front → back)</div>
+          <div id="queueBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Log</div>
+          <div id="log" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Path S→T</div>
+          <div id="pathBox" class="box"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="card">
+    <h2>Input/Output + C++ code</h2>
+    <div class="content">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnRun">⚙ Run</button>
+        <button id="btnLoadSample" class="secondary">📥 Load sample</button>
+
+        <span class="badge"><span class="dot"></span>
+          Format: <span class="mono">R C</span> + R dòng ('.' hoặc '#')
+        </span>
+
+        <label class="badge" style="gap:8px">sr <input type="number" id="sr" min="1" value="2"></label>
+        <label class="badge" style="gap:8px">sc <input type="number" id="sc" min="1" value="2"></label>
+        <label class="badge" style="gap:8px">tr <input type="number" id="tr" min="1" value="7"></label>
+        <label class="badge" style="gap:8px">tc <input type="number" id="tc" min="1" value="9"></label>
+      </div>
+
+      <textarea id="inputArea" spellcheck="false"></textarea>
+      <div id="err" class="err"></div>
+
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Output</div>
+          <div id="outputBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">C++ reference</div>
+          <pre id="cpp"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+document.getElementById('cpp').textContent =
+`// Flood Fill / BFS Grid (shortest path on unweighted grid)
+#include <bits/stdc++.h>
+using namespace std;
+const int INF = 1e9;
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int R,C; cin>>R>>C;
+  vector<string> a(R);
+  for(int i=0;i<R;i++) cin>>a[i];
+
+  int sr,sc,tr,tc; // 0-index in code
+  // read separately in real problems or set fixed
+
+  vector<vector<int>> dist(R, vector<int>(C, INF));
+  vector<vector<pair<int,int>>> par(R, vector<pair<int,int>>(C, {-1,-1}));
+
+  queue<pair<int,int>> q;
+  dist[sr][sc]=0;
+  q.push({sr,sc});
+
+  int dr4[4]={-1,1,0,0};
+  int dc4[4]={0,0,-1,1};
+
+  while(!q.empty()){
+    auto [r,c]=q.front(); q.pop();
+    for(int k=0;k<4;k++){
+      int nr=r+dr4[k], nc=c+dc4[k];
+      if(nr<0||nr>=R||nc<0||nc>=C) continue;
+      if(a[nr][nc]=='#') continue;
+      if(dist[nr][nc]>dist[r][c]+1){
+        dist[nr][nc]=dist[r][c]+1;
+        par[nr][nc]={r,c};
+        q.push({nr,nc});
+      }
+    }
+  }
+}`;
+
+/* sample grid */
+const SAMPLE =
+`8 12
+............
+..###.......
+..#..#......
+..#..#..###.
+..#.....#...
+..#####.#...
+......#.....
+.............`;
+
+document.getElementById('inputArea').value = SAMPLE;
+
+let model=null; // {R,C,grid, sr,sc,tr,tc}
+let actions=[];
+let idx=0;
+
+let playing=false;
+let timer=null;
+
+let lecture=false;
+let waiting=false;
+let cont=false;
+
+const INF=1e9;
+
+function showErr(msg){
+  const el=document.getElementById('err');
+  if(!msg){ el.style.display="none"; el.textContent=""; return; }
+  el.style.display="block"; el.textContent=msg;
+}
+
+function parseInput(txt){
+  const lines=txt.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>0 && !s.startsWith("#"));
+  if(!lines.length) throw new Error("Input rỗng.");
+  const [R,C]=lines[0].split(/\s+/).map(Number);
+  if(!Number.isFinite(R)||!Number.isFinite(C)||R<=0||C<=0) throw new Error("Dòng đầu: R C hợp lệ.");
+  if(lines.length!==R+1) throw new Error(`Cần ${R} dòng lưới, nhưng có ${lines.length-1}.`);
+  const grid=[];
+  for(let i=0;i<R;i++){
+    const s=lines[i+1];
+    if(s.length!==C) throw new Error(`Dòng lưới ${i+1} cần đúng ${C} ký tự.`);
+    for(const ch of s) if(ch!=='.' && ch!=='#') throw new Error("Chỉ dùng '.' hoặc '#'.");
+    grid.push(s);
+  }
+  return {R,C,grid};
+}
+
+function inb(r,c){ return r>=0 && r<model.R && c>=0 && c<model.C; }
+function cellKey(r,c){ return `${r},${c}`; }
+function idx1(x){ return x+1; }
+
+function buildActions(){
+  const R=model.R, C=model.C;
+  const sr=model.sr, sc=model.sc;
+
+  const dist=Array.from({length:R},()=>Array(C).fill(INF));
+  const par =Array.from({length:R},()=>Array(C).fill(null));
+  const q=[];
+
+  const visited=new Set();
+  const frontier=new Set();
+  const log=[];
+
+  const dirs4=[[-1,0],[1,0],[0,-1],[0,1]];
+  const dirs8=[...dirs4,[-1,-1],[-1,1],[1,-1],[1,1]];
+  const dirs = document.getElementById("use8").checked ? dirs8 : dirs4;
+
+  const acts=[];
+  const snap=(type, extra={})=>{
+    acts.push({
+      type,
+      u: extra.u ?? null,
+      v: extra.v ?? null,
+      dist: dist.map(row=>row.slice()),
+      par: par.map(row=>row.slice()),
+      queue: q.slice(),
+      visited: new Set(visited),
+      frontier: new Set(frontier),
+      msg: extra.msg || type
+    });
+    log.push(extra.msg || type);
+  };
+
+  if(model.grid[sr][sc]==='#') throw new Error("Ô bắt đầu nằm trên tường (#).");
+  if(model.grid[model.tr][model.tc]==='#') throw new Error("Ô đích nằm trên tường (#).");
+
+  dist[sr][sc]=0;
+  q.push([sr,sc]);
+  frontier.add(cellKey(sr,sc));
+  snap("init",{msg:`Init: push S=(${idx1(sr)},${idx1(sc)})`});
+
+  while(q.length){
+    const [r,c]=q.shift();
+    frontier.delete(cellKey(r,c));
+    visited.add(cellKey(r,c));
+    snap("dequeue",{u:[r,c],msg:`Dequeue (${idx1(r)},${idx1(c)})`});
+
+    for(const [dr,dc] of dirs){
+      const nr=r+dr, nc=c+dc;
+      snap("check",{u:[r,c],v:[nr,nc],msg:`Check neighbor (${idx1(nr)},${idx1(nc)})`});
+
+      if(!inb(nr,nc)) continue;
+      if(model.grid[nr][nc]==='#') continue;
+
+      if(dist[nr][nc] > dist[r][c] + 1){
+        dist[nr][nc]=dist[r][c]+1;
+        par[nr][nc]=[r,c];
+        q.push([nr,nc]);
+        frontier.add(cellKey(nr,nc));
+        snap("discover",{u:[r,c],v:[nr,nc],msg:`Discover (${idx1(nr)},${idx1(nc)}): d=${dist[nr][nc]} (enqueue)`});
+      }else{
+        snap("skip",{u:[r,c],v:[nr,nc],msg:`Skip (${idx1(nr)},${idx1(nc)})`});
+      }
+    }
+  }
+
+  snap("done",{msg:"Done BFS flood fill."});
+  return acts;
+}
+
+function buildPathFromPar(last){
+  const tr=model.tr, tc=model.tc;
+  if(last.dist[tr][tc] >= INF/2) return null;
+  const path=[];
+  let cur=[tr,tc];
+  for(let guard=0; guard<model.R*model.C+5; guard++){
+    path.push(cur);
+    if(cur[0]===model.sr && cur[1]===model.sc) break;
+    const p=last.par[cur[0]][cur[1]];
+    if(!p) break;
+    cur=p;
+  }
+  if(!(path[path.length-1][0]===model.sr && path[path.length-1][1]===model.sc)) return null;
+  path.reverse();
+  return path;
+}
+
+function renderGrid(a){
+  const gridEl=document.getElementById("grid");
+  gridEl.style.gridTemplateColumns = `repeat(${model.C}, 26px)`;
+  gridEl.innerHTML="";
+
+  const pathCells=new Set();
+  const last=actions[actions.length-1];
+  const p=buildPathFromPar(last);
+  if(p) for(const [r,c] of p) pathCells.add(cellKey(r,c));
+
+  for(let r=0;r<model.R;r++){
+    for(let c=0;c<model.C;c++){
+      const cell=document.createElement("div");
+      cell.className="cell " + (model.grid[r][c]==="#" ? "wall" : "empty");
+      cell.textContent = model.grid[r][c]==="#" ? "#" : ".";
+      const k=cellKey(r,c);
+
+      if(r===model.sr && c===model.sc) cell.classList.add("start");
+      if(r===model.tr && c===model.tc) cell.classList.add("target");
+
+      if(a.visited.has(k)) cell.classList.add("visited");
+      if(a.frontier.has(k)) cell.classList.add("frontier");
+      if(pathCells.has(k)) cell.classList.add("path");
+
+      // show dist small label
+      if(model.grid[r][c]!== "#"){
+        const d=a.dist[r][c];
+        if(d<INF/2) cell.textContent = d;
+      }
+      gridEl.appendChild(cell);
+    }
+  }
+}
+
+function renderFormula(a){
+  const box=document.getElementById("formulaBox");
+  if(a.type==="dequeue"){
+    const [r,c]=a.u;
+    box.innerHTML =
+      `<b>Dequeue u=(${idx1(r)},${idx1(c)})</b>\n`+
+      `Duyệt các ô kề (4/8 hướng). Nếu ô hợp lệ và chưa có dist tốt hơn thì cập nhật.\n`+
+      `<span class="tagSkip">RULE</span>: if dist[nr][nc] > dist[r][c] + 1 => update & enqueue`;
+    return;
+  }
+  if(a.type==="discover"){
+    const [r,c]=a.u;
+    const [nr,nc]=a.v;
+    box.innerHTML =
+      `<b>Relax (discover)</b>\n`+
+      `u=(${idx1(r)},${idx1(c)}), v=(${idx1(nr)},${idx1(nc)})\n`+
+      `dist[v] = dist[u] + 1 = <b>${a.dist[nr][nc]}</b>\n`+
+      `<span class="tagOk">ENQUEUE</span> v vào queue và đặt parent[v]=u`;
+    return;
+  }
+  if(a.type==="check"){
+    const [r,c]=a.u, [nr,nc]=a.v;
+    box.innerHTML =
+      `<b>Check neighbor</b>\n`+
+      `u=(${idx1(r)},${idx1(c)}), v=(${idx1(nr)},${idx1(nc)})\n`+
+      `Nếu v ngoài biên / là tường => bỏ qua.\n`+
+      `Nếu dist[v] > dist[u] + 1 => cập nhật.`;
+    return;
+  }
+  if(a.type==="done"){
+    box.innerHTML =
+      `<b>Done</b>\n`+
+      `Kết thúc loang. dist[][] lưu khoảng cách ngắn nhất từ S đến mọi ô.\n`+
+      `Nếu T có dist hữu hạn thì truy vết bằng parent để ra đường đi.`;
+    return;
+  }
+  box.innerHTML = `Nhấn Step/Play để mô phỏng.`;
+}
+
+function renderAction(i){
+  idx=Math.max(0, Math.min(i, actions.length-1));
+  const a=actions[idx];
+
+  document.getElementById("stepIdx").textContent = idx;
+  document.getElementById("stepTotal").textContent = Math.max(0, actions.length-1);
+  document.getElementById("actionLabel").textContent = a.type;
+
+  if(a.u){
+    const [r,c]=a.u;
+    document.getElementById("uLabel").textContent = `(${idx1(r)},${idx1(c)})`;
+  }else{
+    document.getElementById("uLabel").textContent = "—";
+  }
+
+  renderFormula(a);
+  renderGrid(a);
+
+  document.getElementById("queueBox").textContent =
+    a.queue.length ? a.queue.map(([r,c])=>`(${idx1(r)},${idx1(c)})`).join(" ") : "∅";
+
+  const log=document.getElementById("log");
+  log.textContent = actions.slice(0, idx+1).map((x,k)=>`${String(k).padStart(3,'0')}: ${x.msg}`).join("\n");
+  log.scrollTop = log.scrollHeight;
+
+  const last=actions[actions.length-1];
+  const p=buildPathFromPar(last);
+  const pathBox=document.getElementById("pathBox");
+  if(p){
+    const dist=last.dist[model.tr][model.tc];
+    pathBox.textContent = `Distance: ${dist}\n` + p.map(([r,c])=>`(${idx1(r)},${idx1(c)})`).join(" -> ");
+  }else{
+    pathBox.textContent="(không có đường tới T)";
+  }
+
+  // output
+  let out=`Flood Fill (BFS Grid)\n`;
+  out += `dirs: ${document.getElementById("use8").checked ? "8" : "4"}\n`;
+  out += `S=(${idx1(model.sr)},${idx1(model.sc)}), T=(${idx1(model.tr)},${idx1(model.tc)})\n\n`;
+  out += `dist at T: ${last.dist[model.tr][model.tc] >= INF/2 ? "INF" : last.dist[model.tr][model.tc]}\n`;
+  document.getElementById("outputBox").textContent=out.trimEnd();
+}
+
+/* playback */
+function pauseAll(){
+  playing=false; lecture=false; waiting=false; cont=false;
+  document.getElementById("btnPlay").textContent="▶ Play";
+  document.getElementById("btnAuto").textContent="🎓 Auto Demo";
+  document.getElementById("btnCont").disabled=true;
+  if(timer){ clearTimeout(timer); timer=null; }
+}
+
+function playNormal(){
+  if(playing) return;
+  pauseAll();
+  playing=true;
+  document.getElementById("btnPlay").textContent="⏸ Pause";
+  tickNormal();
+}
+function tickNormal(){
+  if(!playing) return;
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(620/sp);
+  timer=setTimeout(()=>{
+    if(idx < actions.length-1){
+      renderAction(idx+1);
+      tickNormal();
+    }else pauseAll();
+  }, delay);
+}
+
+function startAuto(){
+  if(lecture) return;
+  pauseAll();
+  lecture=true;
+  document.getElementById("btnAuto").textContent="⏸ Stop Auto Demo";
+  tickAuto();
+}
+function tickAuto(){
+  if(!lecture) return;
+
+  if(waiting && !cont){
+    timer=setTimeout(tickAuto, 80);
+    return;
+  }
+  if(cont){
+    cont=false;
+    waiting=false;
+    document.getElementById("btnCont").disabled=true;
+  }
+
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(560/sp);
+
+  timer=setTimeout(()=>{
+    if(idx >= actions.length-1){ pauseAll(); return; }
+
+    const next=actions[idx+1];
+    renderAction(idx+1);
+
+    const pauseOnDeq=document.getElementById("pauseOnDeq").checked;
+    if(next && pauseOnDeq && next.type==="dequeue"){
+      waiting=true;
+      document.getElementById("btnCont").disabled=false;
+      return;
+    }
+    tickAuto();
+  }, delay);
+}
+
+/* run/reset */
+function runFromInput(){
+  pauseAll();
+  showErr("");
+  try{
+    const parsed=parseInput(document.getElementById("inputArea").value);
+
+    const sr=parseInt(document.getElementById("sr").value,10)-1;
+    const sc=parseInt(document.getElementById("sc").value,10)-1;
+    const tr=parseInt(document.getElementById("tr").value,10)-1;
+    const tc=parseInt(document.getElementById("tc").value,10)-1;
+
+    if(!Number.isFinite(sr)||!Number.isFinite(sc)||!Number.isFinite(tr)||!Number.isFinite(tc))
+      throw new Error("sr,sc,tr,tc phải là số.");
+    if(sr<0||sr>=parsed.R||sc<0||sc>=parsed.C) throw new Error("S ngoài biên.");
+    if(tr<0||tr>=parsed.R||tc<0||tc>=parsed.C) throw new Error("T ngoài biên.");
+
+    model={...parsed, sr,sc,tr,tc};
+    actions=buildActions();
+    idx=0;
+    renderAction(0);
+  }catch(e){
+    showErr(e.message || String(e));
+  }
+}
+function resetToStart(){
+  pauseAll();
+  if(actions.length) renderAction(0);
+}
+
+/* wiring */
+document.getElementById("speed").addEventListener("input", e=>{
+  document.getElementById("speedText").textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+});
+document.getElementById("btnRun").addEventListener("click", runFromInput);
+document.getElementById("btnLoadSample").addEventListener("click", ()=>{
+  document.getElementById("inputArea").value=SAMPLE;
+  document.getElementById("sr").value=2;
+  document.getElementById("sc").value=2;
+  document.getElementById("tr").value=7;
+  document.getElementById("tc").value=9;
+  runFromInput();
+});
+document.getElementById("use8").addEventListener("change", runFromInput);
+
+for(const id of ["sr","sc","tr","tc"]){
+  document.getElementById(id).addEventListener("input", ()=>{ if(actions.length) runFromInput(); });
+}
+
+document.getElementById("btnStep").addEventListener("click", ()=>{
+  pauseAll();
+  if(idx < actions.length-1) renderAction(idx+1);
+});
+document.getElementById("btnReset").addEventListener("click", resetToStart);
+
+document.getElementById("btnPlay").addEventListener("click", ()=>{
+  if(playing){ pauseAll(); return; }
+  playNormal();
+});
+document.getElementById("btnAuto").addEventListener("click", ()=>{
+  if(lecture){ pauseAll(); return; }
+  startAuto();
+});
+document.getElementById("btnCont").addEventListener("click", ()=>{
+  if(!lecture) return;
+  cont=true;
+});
+
+/* init */
+runFromInput();
+</script>
+</body>
+</html>

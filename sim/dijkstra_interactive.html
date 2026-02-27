@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mô phỏng thuật toán Dijkstra - Ths. Lê Quyền (THPT Nguyễn Du - Đắk Lắk)</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#101a33; --text:#e8ecff; --muted:#a9b3d6;
+      --accent:#7aa2ff; --good:#2ee59d; --warn:#ffcc66; --bad:#ff6b6b;
+      --edge:#9aa7d6; --edgeHi:#ffcc66; --edgeRelax:#2ee59d; --edgePath:#2ee59d;
+      --node:#1b2b57; --nodeBorder:#6f86ff;
+      --shadow:0 12px 30px rgba(0,0,0,.35); --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:var(--sans); color:var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, #172a63 0%, var(--bg) 55%) fixed;
+    }
+    header{max-width:1250px;margin:0 auto;padding:20px 18px 10px}
+    h1{margin:0 0 6px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.4}
+    .layout{max-width:1250px;margin:0 auto;padding:12px 18px 22px;display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .card h2{margin:0;font-size:14px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.12);color:#dfe6ff}
+    .content{padding:12px 14px}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button{
+      cursor:pointer;border:1px solid rgba(255,255,255,.12);
+      background: rgba(122,162,255,.14); color:var(--text);
+      border-radius:12px;padding:8px 10px;font-weight:800;font-size:13px;
+      transition:transform .06s ease, background .2s ease; white-space:nowrap;
+    }
+    button:hover{background:rgba(122,162,255,.22)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.08)}
+    button.secondary:hover{background:rgba(255,255,255,.12)}
+    button.danger{background:rgba(255,107,107,.16)}
+    button.danger:hover{background:rgba(255,107,107,.22)}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      font-size:12px;color:#dfe6ff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.18)}
+    .mono{font-family:var(--mono);font-size:12px}
+    input[type="number"]{
+      width:70px;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);color:var(--text);font-family:var(--mono);
+    }
+    input[type="checkbox"]{transform:translateY(1px)}
+    .speed{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+    input[type="range"]{width:170px}
+
+    textarea{
+      width:100%;min-height:190px;resize:vertical;padding:10px 12px;border-radius:12px;
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);
+      color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.45;outline:none;
+    }
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .box{
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;
+      max-height:260px;overflow:auto;
+    }
+    pre{margin:0;padding:12px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);
+      overflow:auto;max-height:360px;font-family:var(--mono);font-size:12px;line-height:1.45}
+    table{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.12);font-size:12px}
+    th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+    th{color:#cfd7ff;background:rgba(255,255,255,.05)}
+    tr:last-child td{border-bottom:none}
+    .err{color:var(--bad);font-size:12px;margin-top:8px;display:none}
+
+    .svgWrap{padding:12px 14px 16px}
+    svg{width:100%;height:auto;display:block;background:rgba(0,0,0,.10);border:1px solid rgba(255,255,255,.08);border-radius:14px}
+    .edge{stroke:var(--edge);stroke-width:3.5;opacity:.85}
+    .edge.highlight{stroke:var(--edgeHi);opacity:1}
+    .edge.relax{stroke:var(--edgeRelax);opacity:1}
+    .edge.path{stroke:var(--edgePath);opacity:1;stroke-width:5}
+    .edgeText{fill:#dfe6ff;font-family:var(--mono);font-size:12px;opacity:.92;paint-order:stroke;stroke:rgba(0,0,0,.6);stroke-width:3px;stroke-linejoin:round}
+    .nodeCircle{fill:var(--node);stroke:var(--nodeBorder);stroke-width:3}
+    .nodeCircle.active{stroke:var(--warn)}
+    .nodeCircle.done{stroke:var(--good)}
+    .nodeLabel{fill:#f2f5ff;font-weight:900;font-size:13px;font-family:var(--mono)}
+    .nodeDist{fill:#cfd7ff;font-size:11px;font-family:var(--mono);opacity:.95}
+
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .grid2{grid-template-columns:1fr}
+      .speed{margin-left:0;width:100%;justify-content:space-between}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Teaching - Mô phỏng thuật toán Dijkstra - Ths. Lê Quyền (THPT Nguyễn Du - Đắk Lắk)</h1>
+  <div class="sub">
+    Nhập input (n m s, sau đó m dòng u v w). Chọn <b>vô hướng</b> nếu muốn tự thêm cạnh ngược.
+    Chọn đích <b>t</b> để highlight đường đi ngắn nhất <b>s → t</b>.
+  </div>
+</header>
+
+<div class="layout">
+  <!-- LEFT: Animation -->
+  <section class="card">
+    <h2>Hình động & trạng thái</h2>
+    <div class="svgWrap">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnPlay">▶ Play</button>
+        <button id="btnStep" class="secondary">⏭ Step</button>
+        <button id="btnReset" class="danger">↺ Reset</button>
+        <div class="speed">
+          <span>Tốc độ</span>
+          <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1.2" />
+          <span class="badge"><span class="dot"></span><span id="speedText">1.2x</span></span>
+        </div>
+      </div>
+
+      <svg id="svg" viewBox="0 0 900 520" aria-label="Dijkstra graph animation">
+        <defs>
+          <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+            <path d="M0,0 L12,6 L0,12 z" fill="rgba(154,167,214,.95)"></path>
+          </marker>
+          <marker id="arrowHi" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+            <path d="M0,0 L12,6 L0,12 z" fill="rgba(255,204,102,.98)"></path>
+          </marker>
+          <marker id="arrowOk" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+            <path d="M0,0 L12,6 L0,12 z" fill="rgba(46,229,157,.98)"></path>
+          </marker>
+        </defs>
+        <g id="edges"></g>
+        <g id="nodes"></g>
+      </svg>
+
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <div class="badge"><span class="dot"></span> Nguồn s = <b id="srcLabel">—</b></div>
+          <div style="height:8px"></div>
+          <div class="badge"><span class="dot" style="background:var(--warn);box-shadow:0 0 0 3px rgba(255,204,102,.18)"></span>
+            Đang xử lý: <b id="activeNode">—</b></div>
+          <div style="height:8px"></div>
+          <div class="badge"><span class="dot" style="background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.12)"></span>
+            Bước: <b id="stepIdx">0</b>/<b id="stepTotal">0</b></div>
+        </div>
+        <div>
+          <div class="badge"><span class="dot" style="background:var(--edgeHi);box-shadow:0 0 0 3px rgba(255,204,102,.18)"></span>
+            Đang relax: <b id="activeEdge">—</b></div>
+          <div style="height:8px"></div>
+          <div class="badge"><span class="dot" style="background:var(--good);box-shadow:0 0 0 3px rgba(46,229,157,.18)"></span>
+            Cập nhật: <b id="lastUpdate">—</b></div>
+          <div style="height:8px"></div>
+          <div class="badge"><span class="dot" style="background:#a9b3d6;box-shadow:0 0 0 3px rgba(169,179,214,.14)"></span>
+            PQ: <b id="pqView">—</b></div>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+      <div class="grid2">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Bảng dist/prev</div>
+          <table id="distTable">
+            <thead><tr><th>Đỉnh</th><th>dist</th><th>prev</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Nhật ký bước</div>
+          <div id="log" class="box"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT: Input/Output/Code -->
+  <section class="card">
+    <h2>Nhập input → Run + Output + Code C++</h2>
+    <div class="content">
+      <div class="row" style="gap:8px;margin-bottom:10px">
+        <button id="btnRun">⚙ Run</button>
+        <button id="btnLoadSample" class="secondary">📥 Load sample</button>
+
+        <span class="badge">
+          <span class="dot"></span>
+          Format: <span class="mono">n m s</span> + m dòng <span class="mono">u v w</span>
+        </span>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="undirected" />
+          Vô hướng
+        </label>
+
+        <label class="badge" style="gap:8px">
+          t =
+          <input type="number" id="targetNode" min="1" value="5" />
+        </label>
+      </div>
+
+      <textarea id="inputArea" spellcheck="false"></textarea>
+      <div id="err" class="err"></div>
+
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Output (dist + đường đi)</div>
+          <div id="outputBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Ghi chú dạy học</div>
+          <div class="box">- Dijkstra đúng khi w ≥ 0.
+- Mỗi Step: pop (d,u) nhỏ nhất.
+- Nếu d != dist[u] → bản ghi cũ (skip).
+- Relax u→v: nếu dist[v] > dist[u] + w → cập nhật dist/prev và push lại vào PQ.
+- Chọn t để tô đường đi ngắn nhất s→t.</div>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+      <div class="muted" style="font-size:12px;margin:0 0 6px">Code C++ (tham chiếu)</div>
+      <pre id="cpp"></pre>
+    </div>
+  </section>
+</div>
+
+<script>
+/* =========================
+   0) C++ reference code
+   ========================= */
+document.getElementById('cpp').textContent =
+`#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n, m, s;
+  cin >> n >> m >> s;
+  vector<vector<pair<int,int>>> g(n+1);
+  for (int i = 0; i < m; i++) {
+    int u, v, w;
+    cin >> u >> v >> w;          // directed u -> v
+    g[u].push_back({v, w});
+  }
+
+  const long long INF = (1LL<<60);
+  vector<long long> dist(n+1, INF);
+  vector<int> prev(n+1, -1);
+
+  priority_queue<pair<long long,int>, vector<pair<long long,int>>, greater<pair<long long,int>>> pq;
+  dist[s] = 0;
+  pq.push({0, s});
+
+  while (!pq.empty()) {
+    auto [d, u] = pq.top(); pq.pop();
+    if (d != dist[u]) continue;  // skip stale entry
+
+    for (auto [v, w] : g[u]) {
+      if (dist[v] > dist[u] + w) {
+        dist[v] = dist[u] + w;
+        prev[v] = u;
+        pq.push({dist[v], v});
+      }
+    }
+  }
+
+  for (int i = 1; i <= n; i++) {
+    if (dist[i] >= INF/2) cout << "dist[" << i << "] = INF\\n";
+    else cout << "dist[" << i << "] = " << dist[i] << "\\n";
+  }
+}`;
+
+/* =========================
+   1) Sample input (teaching)
+   ========================= */
+const SAMPLE =
+`6 10 1
+1 2 7
+1 3 9
+1 6 14
+2 3 10
+2 4 15
+3 4 11
+3 6 2
+4 5 6
+6 5 9
+2 5 30`;
+
+document.getElementById('inputArea').value = SAMPLE;
+
+/* =========================
+   2) State
+   ========================= */
+const svgEdges = document.getElementById('edges');
+const svgNodes = document.getElementById('nodes');
+
+let model = null;     // {n,m,s,edges,pos}
+let actions = [];     // list of steps
+let idx = 0;
+let playing = false;
+let timer = null;
+
+function edgeId(u,v){ return `e-${u}-${v}`; }
+function nodeId(u){ return `n-${u}`; }
+
+function fmtDist(x){ return (x >= 1e14) ? "∞" : String(x); }
+function pqToText(pq){
+  if(!pq || pq.length===0) return "∅";
+  return pq.map(([d,u]) => `(${d},${u})`).join(" ");
+}
+
+function showErr(msg){
+  const el = document.getElementById('err');
+  if(!msg){ el.style.display="none"; el.textContent=""; return; }
+  el.style.display="block";
+  el.textContent = msg;
+}
+
+/* =========================
+   3) Parse input
+   ========================= */
+function parseInput(text){
+  const undirected = document.getElementById('undirected').checked;
+  const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>0 && !s.startsWith("#"));
+  if(lines.length===0) throw new Error("Input rỗng.");
+  const first = lines[0].split(/\s+/).map(Number);
+  if(first.length < 3 || first.some(Number.isNaN)) throw new Error("Dòng đầu phải là: n m s");
+  const [n,m,s] = first;
+  if(n<=0 || m<0) throw new Error("n phải > 0, m >= 0");
+  if(s<1 || s>n) throw new Error("s phải nằm trong [1..n]");
+  if(lines.length !== m+1) throw new Error(`Số dòng cạnh không khớp: cần ${m} dòng cạnh, nhưng có ${lines.length-1}.`);
+
+  const edges = [];
+  for(let i=1;i<=m;i++){
+    const parts = lines[i].split(/\s+/).map(Number);
+    if(parts.length<3 || parts.some(Number.isNaN)) throw new Error(`Dòng ${i+1} không hợp lệ: u v w`);
+    const [u,v,w] = parts;
+    if(u<1||u>n||v<1||v>n) throw new Error(`Dòng ${i+1}: u,v phải trong [1..n]`);
+    if(w<0) throw new Error(`Dòng ${i+1}: Dijkstra cần w >= 0`);
+    edges.push([u,v,w]);
+    if(undirected && u!==v) edges.push([v,u,w]);
+  }
+  return {n,m: edges.length, s, edges};
+}
+
+/* =========================
+   4) Layout nodes (circle)
+   ========================= */
+function layoutCircle(n){
+  const cx=450, cy=260;
+  const R = Math.max(150, Math.min(230, 60*n));
+  const pos = {};
+  for(let i=1;i<=n;i++){
+    const ang = (-Math.PI/2) + (2*Math.PI*(i-1)/n);
+    pos[i] = [cx + R*Math.cos(ang), cy + R*Math.sin(ang)];
+  }
+  return pos;
+}
+
+/* =========================
+   5) Draw graph
+   ========================= */
+function drawGraph(){
+  svgEdges.innerHTML = "";
+  svgNodes.innerHTML = "";
+  if(!model) return;
+
+  // edges
+  for(const [u,v,w] of model.edges){
+    const [x1,y1] = model.pos[u];
+    const [x2,y2] = model.pos[v];
+
+    const r = 22;
+    const dx = x2-x1, dy = y2-y1;
+    const len = Math.hypot(dx,dy) || 1;
+    const sx = x1 + (dx/len)*r, sy = y1 + (dy/len)*r;
+    const tx = x2 - (dx/len)*r, ty = y2 - (dy/len)*r;
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute("x1", sx); line.setAttribute("y1", sy);
+    line.setAttribute("x2", tx); line.setAttribute("y2", ty);
+    line.setAttribute("class", "edge");
+    line.setAttribute("marker-end", "url(#arrow)");
+    line.setAttribute("id", edgeId(u,v));
+    svgEdges.appendChild(line);
+
+    const mx = (sx+tx)/2, my = (sy+ty)/2;
+    const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+    text.setAttribute("x", mx);
+    text.setAttribute("y", my-6);
+    text.setAttribute("text-anchor","middle");
+    text.setAttribute("class","edgeText");
+    text.textContent = w;
+    svgEdges.appendChild(text);
+  }
+
+  // nodes
+  for(let u=1; u<=model.n; u++){
+    const [x,y] = model.pos[u];
+    const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("id", nodeId(u));
+
+    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx", x); c.setAttribute("cy", y);
+    c.setAttribute("r", 22);
+    c.setAttribute("class","nodeCircle");
+    g.appendChild(c);
+
+    const label = document.createElementNS("http://www.w3.org/2000/svg","text");
+    label.setAttribute("x", x);
+    label.setAttribute("y", y+4);
+    label.setAttribute("text-anchor","middle");
+    label.setAttribute("class","nodeLabel");
+    label.textContent = u;
+    g.appendChild(label);
+
+    const dist = document.createElementNS("http://www.w3.org/2000/svg","text");
+    dist.setAttribute("x", x);
+    dist.setAttribute("y", y+40);
+    dist.setAttribute("text-anchor","middle");
+    dist.setAttribute("class","nodeDist");
+    dist.setAttribute("id", `distLabel-${u}`);
+    dist.textContent = "dist=∞";
+    g.appendChild(dist);
+
+    svgNodes.appendChild(g);
+  }
+}
+
+function clearHighlights(){
+  if(!model) return;
+  for(const [u,v,_] of model.edges){
+    const line = document.getElementById(edgeId(u,v));
+    if(!line) continue;
+    line.classList.remove("highlight","relax","path");
+    line.setAttribute("marker-end","url(#arrow)");
+  }
+  for(let u=1; u<=model.n; u++){
+    const g = document.getElementById(nodeId(u));
+    if(!g) continue;
+    const c = g.querySelector("circle");
+    c.classList.remove("active","done");
+  }
+}
+
+function updateTable(dist, prev){
+  const tbody = document.querySelector("#distTable tbody");
+  tbody.innerHTML = "";
+  for(let u=1; u<=model.n; u++){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${u}</td><td>${fmtDist(dist[u])}</td><td>${prev[u]===-1?"—":prev[u]}</td>`;
+    tbody.appendChild(tr);
+
+    const dl = document.getElementById(`distLabel-${u}`);
+    dl.textContent = `dist=${fmtDist(dist[u])}`;
+  }
+}
+
+/* =========================
+   6) Dijkstra -> actions
+   ========================= */
+function buildAdj(){
+  const g = Array.from({length: model.n+1}, () => []);
+  for(const [u,v,w] of model.edges) g[u].push([v,w]);
+  return g;
+}
+
+function dijkstraActions(){
+  const n=model.n, s=model.s;
+  const g = buildAdj();
+  const INF=1e15;
+  const dist=Array(n+1).fill(INF);
+  const prev=Array(n+1).fill(-1);
+  const done=Array(n+1).fill(false);
+
+  let pq=[];
+  const acts=[];
+  const push=(d,u)=>{ pq.push([d,u]); pq.sort((a,b)=>a[0]-b[0]); };
+  const pop=()=>pq.shift();
+
+  dist[s]=0; push(0,s);
+  acts.push({type:"init", dist:dist.slice(), prev:prev.slice(), pq:pq.slice(), done:done.slice(),
+    msg:`Khởi tạo: dist[${s}]=0, push (0,${s}) vào PQ.`});
+
+  while(pq.length){
+    const [d,u]=pop();
+    acts.push({type:"pop", u,d, dist:dist.slice(), prev:prev.slice(), pq:pq.slice(), done:done.slice(),
+      msg:`Pop (d=${d}, u=${u}).`});
+
+    if(d!==dist[u]){
+      acts.push({type:"skip", u,d, dist:dist.slice(), prev:prev.slice(), pq:pq.slice(), done:done.slice(),
+        msg:`Skip bản ghi cũ: d=${d} != dist[${u}]=${dist[u]}.`});
+      continue;
+    }
+
+    done[u]=true;
+    acts.push({type:"settle", u, dist:dist.slice(), prev:prev.slice(), pq:pq.slice(), done:done.slice(),
+      msg:`Chốt đỉnh ${u}: dist[${u}] tối ưu.`});
+
+    for(const [v,w] of g[u]){
+      acts.push({type:"relax_try", u,v,w, dist:dist.slice(), prev:prev.slice(), pq:pq.slice(), done:done.slice(),
+        msg:`Xét ${u}→${v} (w=${w}): dist[${v}] ? ${dist[u]}+${w}=${dist[u]+w}`});
+
+      if(dist[v] > dist[u]+w){
+        const old=dist[v];
+        dist[v]=dist[u]+w;
+        prev[v]=u;
+        push(dist[v], v);
+        acts.push({type:"relax_ok", u,v,w, old, now:dist[v], dist:dist.slice(), prev:prev.slice(), pq:pq.slice(), done:done.slice(),
+          msg:`Cập nhật: dist[${v}] ${old>=INF/2?"∞":old}→${dist[v]}, prev[${v}]=${u}. Push (${dist[v]},${v}).`});
+      }else{
+        acts.push({type:"relax_no", u,v,w, dist:dist.slice(), prev:prev.slice(), pq:pq.slice(), done:done.slice(),
+          msg:`Không cập nhật.`});
+      }
+    }
+  }
+
+  acts.push({type:"done", dist:dist.slice(), prev:prev.slice(), pq:[], done:done.slice(),
+    msg:`Kết thúc: PQ rỗng.`});
+  return acts;
+}
+
+/* =========================
+   7) Path highlight s->t
+   ========================= */
+function computePath(prev, dist, t){
+  if(!t || t<1 || t>model.n) return null;
+  if(dist[t] >= 1e14) return null;
+  const path=[];
+  let cur=t;
+  while(cur!==-1){
+    path.push(cur);
+    if(cur===model.s) break;
+    cur=prev[cur];
+  }
+  if(path[path.length-1]!==model.s) return null;
+  path.reverse();
+  return path;
+}
+
+function highlightPath(path){
+  if(!path || path.length<2) return;
+  for(let i=0;i<path.length-1;i++){
+    const u=path[i], v=path[i+1];
+    const line = document.getElementById(edgeId(u,v));
+    if(line) line.classList.add("path");
+  }
+}
+
+/* =========================
+   8) Render action
+   ========================= */
+function renderAction(i){
+  idx = Math.max(0, Math.min(i, actions.length-1));
+  const a = actions[idx];
+
+  document.getElementById('stepIdx').textContent = idx;
+  document.getElementById('stepTotal').textContent = Math.max(0, actions.length-1);
+  document.getElementById('srcLabel').textContent = model ? model.s : "—";
+  document.getElementById('activeNode').textContent = "—";
+  document.getElementById('activeEdge').textContent = "—";
+  document.getElementById('lastUpdate').textContent = "—";
+  document.getElementById('pqView').textContent = pqToText(a.pq);
+
+  clearHighlights();
+  updateTable(a.dist, a.prev);
+
+  // mark done
+  if(a.done){
+    for(let u=1;u<=model.n;u++){
+      if(a.done[u]){
+        const g = document.getElementById(nodeId(u));
+        g.querySelector("circle").classList.add("done");
+      }
+    }
+  }
+
+  // highlight path on every frame (so it stays visible while stepping)
+  const t = parseInt(document.getElementById('targetNode').value, 10);
+  const path = computePath(actions[actions.length-1].prev, actions[actions.length-1].dist, t);
+  highlightPath(path);
+
+  if(["pop","settle","skip"].includes(a.type)){
+    document.getElementById('activeNode').textContent = String(a.u);
+    const g = document.getElementById(nodeId(a.u));
+    g.querySelector("circle").classList.add("active");
+  }
+
+  if(a.type.startsWith("relax")){
+    document.getElementById('activeNode').textContent = String(a.u);
+    document.getElementById('activeEdge').textContent = `${a.u}→${a.v} (w=${a.w})`;
+
+    const gu = document.getElementById(nodeId(a.u));
+    gu.querySelector("circle").classList.add("active");
+
+    const line = document.getElementById(edgeId(a.u,a.v));
+    if(line){
+      line.classList.add("highlight");
+      line.setAttribute("marker-end","url(#arrowHi)");
+    }
+
+    if(a.type==="relax_ok"){
+      document.getElementById('lastUpdate').textContent = `dist[${a.v}] = ${a.now}, prev[${a.v}] = ${a.u}`;
+      if(line){
+        line.classList.remove("highlight");
+        line.classList.add("relax");
+        line.setAttribute("marker-end","url(#arrowOk)");
+      }
+      const gv = document.getElementById(nodeId(a.v));
+      gv.querySelector("circle").classList.add("active");
+    }
+  }
+
+  const log = document.getElementById('log');
+  log.textContent = actions.slice(0, idx+1).map((x,k)=>`${String(k).padStart(2,'0')}: ${x.msg}`).join("\n");
+  log.scrollTop = log.scrollHeight;
+}
+
+/* =========================
+   9) Output
+   ========================= */
+function buildOutput(finalDist, finalPrev){
+  let out = `Khoảng cách ngắn nhất từ s = ${model.s}:\n`;
+  for(let i=1;i<=model.n;i++) out += `dist[${i}] = ${fmtDist(finalDist[i])}\n`;
+
+  out += `\nĐường đi (theo prev):\n`;
+  for(let t=1;t<=model.n;t++){
+    if(t===model.s) continue;
+    const path = computePath(finalPrev, finalDist, t);
+    if(!path) out += `${model.s} -> ${t}: (không có đường đi)\n`;
+    else out += `${model.s} -> ${t}: ${path.join("-")}\n`;
+  }
+
+  const chosenT = parseInt(document.getElementById('targetNode').value, 10);
+  const chosenPath = computePath(finalPrev, finalDist, chosenT);
+  out += `\nĐích t = ${isNaN(chosenT)?'—':chosenT}:\n`;
+  if(!chosenPath) out += `Không có đường đi s → t (hoặc t không hợp lệ).`;
+  else out += `Path s→t: ${chosenPath.join(" - ")} (dist = ${finalDist[chosenT]})`;
+
+  return out.trimEnd();
+}
+
+/* =========================
+   10) Controls
+   ========================= */
+function stepForward(){
+  if(idx < actions.length-1) renderAction(idx+1);
+  else pause();
+}
+function play(){
+  if(playing) return;
+  playing = true;
+  document.getElementById('btnPlay').textContent = "⏸ Pause";
+  tick();
+}
+function pause(){
+  playing = false;
+  document.getElementById('btnPlay').textContent = "▶ Play";
+  if(timer){ clearTimeout(timer); timer=null; }
+}
+function tick(){
+  if(!playing) return;
+  const sp = parseFloat(document.getElementById('speed').value);
+  const delay = Math.round(850 / sp);
+  timer = setTimeout(()=>{ stepForward(); tick(); }, delay);
+}
+function reset(){
+  pause();
+  renderAction(0);
+}
+
+document.getElementById('speed').addEventListener('input', (e)=>{
+  document.getElementById('speedText').textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+});
+
+/* =========================
+   11) Run from input
+   ========================= */
+function runFromInput(){
+  pause();
+  showErr("");
+  try{
+    const parsed = parseInput(document.getElementById('inputArea').value);
+    model = { ...parsed, pos: layoutCircle(parsed.n) };
+
+    drawGraph();
+    actions = dijkstraActions();
+    idx = 0;
+    renderAction(0);
+
+    const last = actions[actions.length-1];
+    document.getElementById('outputBox').textContent = buildOutput(last.dist, last.prev);
+  }catch(err){
+    showErr(err.message || String(err));
+  }
+}
+
+/* UI events */
+document.getElementById('btnRun').addEventListener('click', runFromInput);
+document.getElementById('btnLoadSample').addEventListener('click', ()=>{
+  document.getElementById('inputArea').value = SAMPLE;
+  runFromInput();
+});
+document.getElementById('btnPlay').addEventListener('click', ()=> playing ? pause() : play());
+document.getElementById('btnStep').addEventListener('click', ()=>{ pause(); stepForward(); });
+document.getElementById('btnReset').addEventListener('click', reset);
+
+document.getElementById('targetNode').addEventListener('input', ()=>{
+  if(!actions.length) return;
+  const last = actions[actions.length-1];
+  document.getElementById('outputBox').textContent = buildOutput(last.dist, last.prev);
+  renderAction(idx); // redraw highlight path
+});
+document.getElementById('undirected').addEventListener('change', ()=>{
+  runFromInput();
+});
+
+/* init */
+runFromInput();
+</script>
+</body>
+</html>

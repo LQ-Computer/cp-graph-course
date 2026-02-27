@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bellman–Ford Interactive (Directed/Undirected)</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#101a33; --text:#e8ecff; --muted:#a9b3d6;
+      --accent:#7aa2ff; --good:#2ee59d; --warn:#ffcc66; --bad:#ff6b6b;
+      --edge:#9aa7d6; --edgeHi:#ffcc66; --edgePath:#2ee59d; --edgeRelax:#2ee59d;
+      --node:#1b2b57; --nodeBorder:#6f86ff;
+      --shadow:0 12px 30px rgba(0,0,0,.35); --radius:16px;
+      --stroke:rgba(255,255,255,.08);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);color:var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, #172a63 0%, var(--bg) 55%) fixed;}
+    header{max-width:1300px;margin:0 auto;padding:20px 18px 10px}
+    h1{margin:0 0 6px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.4}
+
+    .layout{max-width:1300px;margin:0 auto;padding:12px 18px 22px;display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .card h2{margin:0;font-size:14px;padding:12px 14px;border-bottom:1px solid var(--stroke);background:rgba(0,0,0,.12);color:#dfe6ff}
+    .content{padding:12px 14px}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button{
+      cursor:pointer;border:1px solid rgba(255,255,255,.12);
+      background: rgba(122,162,255,.14); color:var(--text);
+      border-radius:12px;padding:8px 10px;font-weight:800;font-size:13px;
+      transition:transform .06s ease, background .2s ease; white-space:nowrap;
+    }
+    button:hover{background:rgba(122,162,255,.22)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.08)}
+    button.secondary:hover{background:rgba(255,255,255,.12)}
+    button.danger{background:rgba(255,107,107,.16)}
+    button.danger:hover{background:rgba(255,107,107,.22)}
+    button.good{background:rgba(46,229,157,.16)}
+    button.good:hover{background:rgba(46,229,157,.24)}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      font-size:12px;color:#dfe6ff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.18)}
+    .mono{font-family:var(--mono);font-size:12px}
+    input[type="number"]{
+      width:70px;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);color:var(--text);font-family:var(--mono);
+    }
+    input[type="checkbox"], input[type="radio"]{transform:translateY(1px)}
+    .speed{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+    input[type="range"]{width:170px}
+
+    textarea{
+      width:100%;min-height:175px;resize:vertical;padding:10px 12px;border-radius:12px;
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);
+      color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.45;outline:none;
+    }
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .box{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;
+      max-height:260px;overflow:auto;
+    }
+    pre{margin:0;padding:12px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid var(--stroke);
+      overflow:auto;max-height:360px;font-family:var(--mono);font-size:12px;line-height:1.45}
+    .err{color:var(--bad);font-size:12px;margin-top:8px;display:none}
+
+    .svgWrap{padding:12px 14px 14px}
+    svg{width:100%;height:auto;display:block;background:rgba(0,0,0,.10);border:1px solid var(--stroke);border-radius:14px}
+
+    .edge{stroke:var(--edge);stroke-width:3.5;opacity:.85;transition:stroke .2s,opacity .2s,stroke-width .2s}
+    .edge.highlight{stroke:var(--edgeHi);opacity:1}
+    .edge.relax{stroke:var(--edgeRelax);opacity:1;stroke-width:6}
+    .edge.path{stroke:var(--edgePath);opacity:1;stroke-width:6}
+    .wLabel{fill:#eef2ff;font-size:11px;font-family:var(--mono);opacity:.95}
+
+    .nodeCircle{fill:var(--node);stroke:var(--nodeBorder);stroke-width:3;transition:stroke .2s,filter .2s,opacity .2s}
+    .nodeCircle.active{stroke:var(--warn);filter:drop-shadow(0 0 10px rgba(255,204,102,.18))}
+    .nodeLabel{fill:#f2f5ff;font-weight:900;font-size:13px;font-family:var(--mono)}
+    .nodeMeta{fill:#cfd7ff;font-size:11px;font-family:var(--mono);opacity:.95}
+
+    table{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid var(--stroke);
+      background:rgba(0,0,0,.12);font-size:12px}
+    th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:left}
+    th{color:#cfd7ff;background:rgba(255,255,255,.05)}
+    tr:last-child td{border-bottom:none}
+
+    .formula{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;line-height:1.45;
+    }
+    .tagOk{color:var(--good);font-weight:900}
+    .tagNo{color:var(--bad);font-weight:900}
+    .tagSkip{color:var(--muted);font-weight:900}
+
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .grid2,.grid3{grid-template-columns:1fr}
+      .speed{margin-left:0;width:100%;justify-content:space-between}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Bellman–Ford Interactive (Directed / Undirected)</h1>
+  <div class="sub">
+    Bellman–Ford: lặp <b>n−1</b> vòng, mỗi vòng relax tất cả cạnh. Có thể có cạnh âm.
+    Sau đó kiểm tra vòng thứ <b>n</b> để phát hiện <b>negative cycle</b>.
+    <b>Vô hướng:</b> chỉ vẽ 1 cạnh, không mũi tên; chỉ khi tô <b>path s→t</b> mới hiện mũi tên nhỏ.
+  </div>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <section class="card">
+    <h2>Hình động & trạng thái</h2>
+    <div class="svgWrap">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnPlay">▶ Play</button>
+        <button id="btnStep" class="secondary">⏭ Step</button>
+        <button id="btnReset" class="danger">↺ Reset</button>
+
+        <button id="btnAuto" class="good">🎓 Auto Demo</button>
+        <button id="btnCont" class="secondary" disabled>▶ Continue</button>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="pauseOnRelax" checked />
+          Pause on Relax
+        </label>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="iterOnly" />
+          Chỉ chạy theo vòng lặp
+        </label>
+
+        <div class="speed">
+          <span>Tốc độ</span>
+          <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1.2" />
+          <span class="badge"><span class="dot"></span><span id="speedText">1.2x</span></span>
+        </div>
+      </div>
+
+      <svg id="svg" viewBox="0 0 900 520">
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="rgba(154,167,214,.95)"></path>
+          </marker>
+          <marker id="arrowHi" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="rgba(255,204,102,.98)"></path>
+          </marker>
+          <marker id="arrowPath" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="rgba(46,229,157,.98)"></path>
+          </marker>
+        </defs>
+        <g id="edges"></g>
+        <g id="weights"></g>
+        <g id="nodes"></g>
+      </svg>
+
+      <div class="row" style="margin-top:10px">
+        <span class="badge"><span class="dot"></span> iter=<b id="iterLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:var(--warn);box-shadow:0 0 0 3px rgba(255,204,102,.18)"></span>
+          edge=<b id="edgeLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.12)"></span>
+          step <b id="stepIdx">0</b>/<b id="stepTotal">0</b></span>
+        <span class="badge"><span class="dot" style="background:var(--good);box-shadow:0 0 0 3px rgba(46,229,157,.18)"></span>
+          action <b id="actionLabel">—</b></span>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="formula" id="formulaBox"></div>
+
+      <div style="height:12px"></div>
+
+      <div class="grid3">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">dist/parent</div>
+          <table id="stateTable">
+            <thead><tr><th>v</th><th>dist</th><th>par</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Log</div>
+          <div id="log" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Path s→t</div>
+          <div id="pathBox" class="box"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="card">
+    <h2>Input/Output + C++ code</h2>
+    <div class="content">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnRun">⚙ Run</button>
+        <button id="btnLoadSample" class="secondary">📥 Load sample</button>
+
+        <span class="badge"><span class="dot"></span>
+          Format: <span class="mono">n m s</span> + m dòng <span class="mono">u v w</span>
+        </span>
+
+        <label class="badge" style="gap:8px">
+          <input type="radio" name="dir" id="dirDirected" checked />
+          Có hướng
+        </label>
+        <label class="badge" style="gap:8px">
+          <input type="radio" name="dir" id="dirUndirected" />
+          Vô hướng
+        </label>
+
+        <label class="badge" style="gap:8px">
+          t =
+          <input type="number" id="tNode" min="1" value="5" />
+        </label>
+      </div>
+
+      <textarea id="inputArea" spellcheck="false"></textarea>
+      <div id="err" class="err"></div>
+
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Output</div>
+          <div id="outputBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">C++ reference</div>
+          <pre id="cpp"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ---------- C++ reference ---------- */
+document.getElementById('cpp').textContent =
+`#include <bits/stdc++.h>
+using namespace std;
+const long long INF = (1LL<<60);
+
+struct Edge{int u,v; long long w;};
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,m,s; cin>>n>>m>>s;
+  vector<Edge> edges;
+  edges.reserve(m);
+  for(int i=0;i<m;i++){
+    int u,v; long long w; cin>>u>>v>>w;
+    edges.push_back({u,v,w}); // directed
+    // if undirected: edges.push_back({v,u,w});
+  }
+
+  vector<long long> dist(n+1, INF);
+  vector<int> parent(n+1, -1);
+  dist[s]=0;
+
+  for(int it=1; it<=n-1; it++){
+    bool changed=false;
+    for(auto &e: edges){
+      if(dist[e.u]==INF) continue;
+      if(dist[e.u] + e.w < dist[e.v]){
+        dist[e.v]=dist[e.u]+e.w;
+        parent[e.v]=e.u;
+        changed=true;
+      }
+    }
+    if(!changed) break;
+  }
+
+  // negative cycle check
+  bool neg=false;
+  for(auto &e: edges){
+    if(dist[e.u]==INF) continue;
+    if(dist[e.u] + e.w < dist[e.v]){ neg=true; break; }
+  }
+}`;
+
+/* ---------- Sample (no negative cycle) ---------- */
+const SAMPLE =
+`5 7 1
+1 2 6
+1 3 7
+2 3 8
+2 4 5
+2 5 -4
+3 4 -3
+4 2 -2`;
+
+document.getElementById('inputArea').value = SAMPLE;
+
+/* ---------- SVG ---------- */
+const svgEdges=document.getElementById('edges');
+const svgWeights=document.getElementById('weights');
+const svgNodes=document.getElementById('nodes');
+
+const edgeKey=(u,v)=>`${u}-${v}`;
+const edgeId=(u,v)=>`e-${u}-${v}`;
+const nodeId=(u)=>`n-${u}`;
+
+let model=null;   // {n,m,s, edges:[{u,v,w}], directed, pos, visEdges}
+let actions=[];
+let idx=0;
+
+// iter-only indices
+let iterOnlyIdx=[];
+let iterPos=0;
+
+let playing=false;
+let timerPlay=null;
+
+let lectureMode=false;
+let waitingContinue=false;
+let continueRequested=false;
+
+const INF = 10**15;
+
+function showErr(msg){
+  const el=document.getElementById('err');
+  if(!msg){ el.style.display="none"; el.textContent=""; return; }
+  el.style.display="block"; el.textContent=msg;
+}
+function layoutCircle(n){
+  const cx=450, cy=260;
+  const R=Math.max(150, Math.min(235, 60*n));
+  const pos={};
+  for(let i=1;i<=n;i++){
+    const ang=(-Math.PI/2) + (2*Math.PI*(i-1)/n);
+    pos[i]=[cx+R*Math.cos(ang), cy+R*Math.sin(ang)];
+  }
+  return pos;
+}
+
+/* parse: n m s + m lines u v w */
+function parseInput(text){
+  const lines=text.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>0 && !s.startsWith("#"));
+  if(!lines.length) throw new Error("Input rỗng.");
+  const first=lines[0].split(/\s+/).map(Number);
+  if(first.length<3 || first.some(Number.isNaN)) throw new Error("Dòng đầu: n m s");
+  const [n,m,s]=first;
+  if(n<=0||m<0) throw new Error("n>0, m>=0");
+  if(s<1||s>n) throw new Error("s trong [1..n]");
+  if(lines.length!==m+1) throw new Error(`Cần ${m} dòng cạnh, nhưng có ${lines.length-1}.`);
+
+  const directed=document.getElementById('dirDirected').checked;
+  const edges=[];
+  for(let i=1;i<=m;i++){
+    const parts=lines[i].split(/\s+/).map(Number);
+    if(parts.length<3 || parts.some(Number.isNaN)) throw new Error(`Dòng ${i+1}: u v w`);
+    const [u,v,w]=parts;
+    if(u<1||u>n||v<1||v>n) throw new Error(`Dòng ${i+1}: u,v trong [1..n]`);
+    edges.push({u,v,w});
+  }
+  return {n,m,s,edges,directed};
+}
+
+/* Build visual edges:
+   - Directed: keep min weight for duplicate u->v
+   - Undirected: draw 1 edge for unordered pair (min weight), but algorithm relaxes both directions
+*/
+function buildVisEdges(){
+  const vis=[];
+  if(model.directed){
+    const best=new Map();
+    for(const {u,v,w} of model.edges){
+      const k=edgeKey(u,v);
+      if(!best.has(k) || w < best.get(k)) best.set(k,w);
+    }
+    for(const [k,w] of best.entries()){
+      const [u,v]=k.split("-").map(Number);
+      vis.push({u,v,w});
+    }
+  }else{
+    const best=new Map(); // "min-max"
+    for(const {u,v,w} of model.edges){
+      const a=Math.min(u,v), b=Math.max(u,v);
+      const k=edgeKey(a,b);
+      if(!best.has(k) || w < best.get(k).w) best.set(k,{u:a,v:b,w});
+    }
+    for(const e of best.values()) vis.push(e);
+  }
+  return vis;
+}
+
+function drawGraph(){
+  svgEdges.innerHTML=""; svgWeights.innerHTML=""; svgNodes.innerHTML="";
+  if(!model) return;
+
+  model.visEdges = buildVisEdges();
+
+  for(const {u,v,w} of model.visEdges){
+    const [x1,y1]=model.pos[u], [x2,y2]=model.pos[v];
+    const r=22, dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy)||1;
+    const sx=x1+(dx/len)*r, sy=y1+(dy/len)*r;
+    const tx=x2-(dx/len)*r, ty=y2-(dy/len)*r;
+
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute("x1",sx); line.setAttribute("y1",sy);
+    line.setAttribute("x2",tx); line.setAttribute("y2",ty);
+    line.setAttribute("class","edge");
+    line.setAttribute("id",edgeId(u,v));
+    if(model.directed) line.setAttribute("marker-end","url(#arrow)");
+    else line.removeAttribute("marker-end");
+    svgEdges.appendChild(line);
+
+    const mx=(sx+tx)/2, my=(sy+ty)/2;
+    const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x",mx); t.setAttribute("y",my-6);
+    t.setAttribute("text-anchor","middle");
+    t.setAttribute("class","wLabel");
+    t.textContent=w;
+    svgWeights.appendChild(t);
+  }
+
+  for(let u=1;u<=model.n;u++){
+    const [x,y]=model.pos[u];
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("id",nodeId(u));
+
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",22);
+    c.setAttribute("class","nodeCircle");
+    g.appendChild(c);
+
+    const L=document.createElementNS("http://www.w3.org/2000/svg","text");
+    L.setAttribute("x",x); L.setAttribute("y",y+4);
+    L.setAttribute("text-anchor","middle");
+    L.setAttribute("class","nodeLabel");
+    L.textContent=u;
+    g.appendChild(L);
+
+    const M=document.createElementNS("http://www.w3.org/2000/svg","text");
+    M.setAttribute("x",x); M.setAttribute("y",y+40);
+    M.setAttribute("text-anchor","middle");
+    M.setAttribute("class","nodeMeta");
+    M.setAttribute("id",`meta-${u}`);
+    M.textContent="dist=∞";
+    g.appendChild(M);
+
+    svgNodes.appendChild(g);
+  }
+}
+
+function clearHighlights(){
+  for(const e of model.visEdges){
+    const el=document.getElementById(edgeId(e.u,e.v));
+    if(!el) continue;
+    el.classList.remove("highlight","relax","path");
+    if(model.directed) el.setAttribute("marker-end","url(#arrow)");
+    else el.removeAttribute("marker-end");
+  }
+  for(let u=1;u<=model.n;u++){
+    document.getElementById(nodeId(u)).querySelector("circle").classList.remove("active");
+  }
+}
+
+function findDrawnEdge(u,v){
+  let el=document.getElementById(edgeId(u,v));
+  if(!el && !model.directed){
+    const a=Math.min(u,v), b=Math.max(u,v);
+    el=document.getElementById(edgeId(a,b));
+  }
+  return el;
+}
+
+function formatVal(x){
+  if(x>=INF/2) return "∞";
+  return String(x);
+}
+
+/* ---------- Actions ---------- */
+function bellmanFordActions(){
+  const n=model.n, s=model.s;
+
+  // build relax edge list:
+  // - directed: use edges as given
+  // - undirected: relax both directions, but keep visualization 1 edge
+  const relaxEdges=[];
+  for(const {u,v,w} of model.edges){
+    relaxEdges.push({u,v,w});
+    if(!model.directed && u!==v) relaxEdges.push({u:v, v:u, w});
+  }
+
+  const dist=Array(n+1).fill(INF);
+  const parent=Array(n+1).fill(-1);
+  dist[s]=0;
+
+  const acts=[];
+  const snap=(type, extra={})=>{
+    acts.push({
+      type,
+      iter: extra.iter ?? 0,
+      eidx: extra.eidx ?? -1,
+      u: extra.u ?? -1,
+      v: extra.v ?? -1,
+      w: extra.w ?? 0,
+      du: extra.du,
+      dv: extra.dv,
+      nd: extra.nd,
+      updated: extra.updated ?? false,
+      msg: extra.msg || type,
+      dist: dist.slice(),
+      parent: parent.slice(),
+      negCycle: extra.negCycle ?? false
+    });
+  };
+
+  snap("init",{msg:`Init: dist[s]=0, others=∞. s=${s}`});
+
+  for(let it=1; it<=n-1; it++){
+    let changed=false;
+    snap("iter_start",{iter:it,msg:`Iteration ${it} (start)`});
+
+    for(let ei=0; ei<relaxEdges.length; ei++){
+      const e=relaxEdges[ei];
+      const u=e.u, v=e.v, w=e.w;
+
+      const du=dist[u], dv=dist[v];
+      snap("check",{iter:it,eidx:ei,u,v,w,du,dv,
+        msg:`Check edge ${u}→${v} (w=${w})`});
+
+      if(du>=INF/2) continue;
+
+      const nd = du + w;
+      if(nd < dist[v]){
+        dist[v]=nd;
+        parent[v]=u;
+        changed=true;
+        snap("relax",{iter:it,eidx:ei,u,v,w,du,dv,nd,updated:true,
+          msg:`Relax: dist[${v}] = dist[${u}] + ${w} = ${nd}`});
+      }
+    }
+
+    snap("iter_end",{iter:it,msg:`Iteration ${it} (end)${changed? "" : " — no change, stop early"}`});
+    if(!changed) break;
+  }
+
+  // negative cycle check (iteration n)
+  let neg=false;
+  snap("neg_check_start",{iter:n,msg:`Negative cycle check (iteration ${n})`});
+  for(let ei=0; ei<relaxEdges.length; ei++){
+    const e=relaxEdges[ei];
+    const u=e.u, v=e.v, w=e.w;
+    const du=dist[u];
+    if(du>=INF/2) continue;
+    const nd=du+w;
+    if(nd < dist[v]){
+      neg=true;
+      snap("neg_cycle",{iter:n,eidx:ei,u,v,w,du,dv:dist[v],nd,negCycle:true,
+        msg:`NEGATIVE CYCLE detected via edge ${u}→${v}: ${nd} < ${dist[v]}`});
+      break;
+    }
+  }
+  snap("done",{iter:n,negCycle:neg,msg: neg ? "Done (NEGATIVE CYCLE detected)" : "Done (no negative cycle)"});
+  return {acts, relaxEdges};
+}
+
+function rebuildIterOnly(){
+  iterOnlyIdx=[];
+  for(let t=0;t<actions.length;t++){
+    if(actions[t].type==="iter_end" || actions[t].type==="init" || actions[t].type==="done"){
+      iterOnlyIdx.push(t);
+    }
+  }
+  if(iterOnlyIdx.length===0 || iterOnlyIdx[0]!==0) iterOnlyIdx.unshift(0);
+
+  let best=0;
+  for(let p=0;p<iterOnlyIdx.length;p++){
+    if(iterOnlyIdx[p] <= idx) best=p;
+    else break;
+  }
+  iterPos=best;
+}
+
+function nextIndexStep(){
+  const iterOnly=document.getElementById("iterOnly").checked;
+  if(!iterOnly) return Math.min(actions.length-1, idx+1);
+  if(!iterOnlyIdx.length) rebuildIterOnly();
+  if(iterPos < iterOnlyIdx.length-1) iterPos++;
+  return iterOnlyIdx[iterPos];
+}
+
+/* ---------- Path from parent (final state) ---------- */
+function buildPath(last, t){
+  if(t<1||t>model.n) return null;
+  if(last.dist[t]>=INF/2) return null;
+  const path=[];
+  let cur=t;
+  for(let guard=0; guard<model.n+5; guard++){
+    path.push(cur);
+    if(cur===model.s) break;
+    cur=last.parent[cur];
+    if(cur===-1) break;
+  }
+  if(path[path.length-1]!==model.s) return null;
+  path.reverse();
+  return path;
+}
+function highlightPath(path){
+  if(!path || path.length<2) return;
+  for(let i=0;i<path.length-1;i++){
+    const u=path[i], v=path[i+1];
+    const el=findDrawnEdge(u,v);
+    if(el){
+      el.classList.add("path");
+      el.setAttribute("marker-end","url(#arrowPath)");
+    }
+  }
+}
+
+/* ---------- UI render ---------- */
+function updateStateTable(a){
+  const tbody=document.querySelector("#stateTable tbody");
+  tbody.innerHTML="";
+  for(let v=1; v<=model.n; v++){
+    const dist = formatVal(a.dist[v]);
+    const par = a.parent[v]===-1 ? "—" : a.parent[v];
+    const tr=document.createElement("tr");
+    tr.innerHTML = `<td>${v}</td><td>${dist}</td><td>${par}</td>`;
+    tbody.appendChild(tr);
+    document.getElementById(`meta-${v}`).textContent = `dist=${dist}`;
+  }
+}
+
+function renderFormula(a){
+  const box=document.getElementById("formulaBox");
+
+  if(a.type==="check" || a.type==="relax" || a.type==="neg_cycle"){
+    const du = a.du===undefined ? "—" : formatVal(a.du);
+    const dv = a.dv===undefined ? "—" : formatVal(a.dv);
+    const nd = (a.nd===undefined) ? "—" : formatVal(a.nd);
+
+    let status="";
+    if(a.type==="relax") status = `<span class="tagOk">RELAX</span> vì ${nd} < ${dv}`;
+    else if(a.type==="neg_cycle") status = `<span class="tagNo">NEG CYCLE</span> vì ${nd} < ${dv}`;
+    else status = `<span class="tagSkip">CHECK</span>`;
+
+    box.innerHTML =
+      `<b>iter=${a.iter}</b> edge <b>${a.u}→${a.v}</b> (w=${a.w})\n`+
+      `dist[u] = dist[${a.u}] = <b>${du}</b>\n`+
+      `dist[v] (old) = dist[${a.v}] = <b>${dv}</b>\n`+
+      `nd = dist[u] + w = <b>${nd}</b>\n`+
+      `${status}`;
+    return;
+  }
+
+  if(a.type==="iter_start"){
+    box.innerHTML = `<b>Iteration ${a.iter}</b>\nDuyệt tất cả cạnh và thử relax.`;
+    return;
+  }
+  if(a.type==="iter_end"){
+    box.innerHTML = `<b>Iteration ${a.iter}</b>\nKết thúc vòng lặp (nếu không đổi thì dừng sớm).`;
+    return;
+  }
+  if(a.type==="neg_check_start"){
+    box.innerHTML = `<b>Negative cycle check</b>\nThử relax thêm 1 vòng nữa (vòng n). Nếu còn relax được => có chu trình âm.`;
+    return;
+  }
+  box.innerHTML = `Quy tắc relax:\n<b>nếu</b> dist[u] + w < dist[v] <b>thì</b> cập nhật dist[v], parent[v]=u.`;
+}
+
+function buildOutput(last){
+  let out = `Bellman–Ford from s=${model.s}\n`;
+  out += `Directed: ${model.directed ? "YES" : "NO (undirected)"}\n`;
+  out += `Negative cycle: ${last.negCycle ? "YES" : "NO"}\n\n`;
+
+  out += `dist:\n`;
+  for(let v=1; v<=model.n; v++){
+    out += `dist[${v}] = ${formatVal(last.dist[v])}\n`;
+  }
+  out += `\nparent:\n`;
+  for(let v=1; v<=model.n; v++){
+    out += `par[${v}] = ${last.parent[v]===-1 ? "-1" : last.parent[v]}\n`;
+  }
+
+  const t=parseInt(document.getElementById("tNode").value,10);
+  out += `\nQuery path s→t: t=${isNaN(t)?"—":t}\n`;
+  const p = buildPath(last, t);
+  out += p ? `path: ${p.join(" - ")}\n` : "path: (không có)\n";
+  if(p) out += `distance: ${formatVal(last.dist[t])}\n`;
+  return out.trimEnd();
+}
+
+function renderAction(i){
+  idx = Math.max(0, Math.min(i, actions.length-1));
+  const a = actions[idx];
+
+  document.getElementById("stepIdx").textContent = idx;
+  document.getElementById("stepTotal").textContent = Math.max(0, actions.length-1);
+
+  document.getElementById("iterLabel").textContent = a.iter ?? "—";
+  document.getElementById("edgeLabel").textContent =
+    (a.u && a.u!==-1) ? `${a.u}→${a.v} (w=${a.w})` : "—";
+  document.getElementById("actionLabel").textContent = a.type;
+
+  clearHighlights();
+
+  // highlight current edge
+  if(a.type==="check" || a.type==="relax" || a.type==="neg_cycle"){
+    const el=findDrawnEdge(a.u,a.v);
+    if(el){
+      el.classList.add("highlight");
+      if(model.directed) el.setAttribute("marker-end","url(#arrowHi)");
+      else el.removeAttribute("marker-end");
+    }
+    document.getElementById(nodeId(a.u)).querySelector("circle").classList.add("active");
+    document.getElementById(nodeId(a.v)).querySelector("circle").classList.add("active");
+  }
+
+  // show relax edge strongly
+  if(a.type==="relax"){
+    const el=findDrawnEdge(a.u,a.v);
+    if(el){
+      el.classList.add("relax");
+      el.setAttribute("marker-end","url(#arrowPath)");
+    }
+  }
+
+  renderFormula(a);
+  updateStateTable(a);
+
+  const log=document.getElementById("log");
+  log.textContent = actions.slice(0, idx+1).map((x,k)=>`${String(k).padStart(3,'0')}: ${x.msg}`).join("\n");
+  log.scrollTop = log.scrollHeight;
+
+  const last = actions[actions.length-1];
+  const t=parseInt(document.getElementById("tNode").value,10);
+  const p = buildPath(last, t);
+  const pathBox=document.getElementById("pathBox");
+  pathBox.textContent = p ? `Path: ${p.join(" - ")}\nDistance: ${formatVal(last.dist[t])}` : "Path: (không có)";
+  if(p) highlightPath(p);
+
+  document.getElementById("outputBox").textContent = buildOutput(last);
+
+  // sync iter-only pos
+  if(document.getElementById("iterOnly").checked){
+    const ppos = iterOnlyIdx.indexOf(idx);
+    if(ppos>=0) iterPos=ppos;
+  }
+}
+
+/* ---------- Playback ---------- */
+function pauseAll(){
+  playing=false; lectureMode=false; waitingContinue=false; continueRequested=false;
+  document.getElementById("btnPlay").textContent="▶ Play";
+  document.getElementById("btnAuto").textContent="🎓 Auto Demo";
+  document.getElementById("btnCont").disabled=true;
+  if(timerPlay){ clearTimeout(timerPlay); timerPlay=null; }
+}
+
+function playNormal(){
+  if(playing) return;
+  pauseAll();
+  playing=true;
+  document.getElementById("btnPlay").textContent="⏸ Pause";
+  tickNormal();
+}
+function tickNormal(){
+  if(!playing) return;
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(650/sp);
+  timerPlay=setTimeout(()=>{
+    const next = nextIndexStep();
+    if(next > idx){ renderAction(next); tickNormal(); }
+    else pauseAll();
+  }, delay);
+}
+
+function startAutoDemo(){
+  if(lectureMode) return;
+  pauseAll();
+  lectureMode=true;
+  document.getElementById("btnAuto").textContent="⏸ Stop Auto Demo";
+  tickAuto();
+}
+function tickAuto(){
+  if(!lectureMode) return;
+
+  if(waitingContinue && !continueRequested){
+    timerPlay=setTimeout(tickAuto, 80);
+    return;
+  }
+  if(continueRequested){
+    continueRequested=false;
+    waitingContinue=false;
+    document.getElementById("btnCont").disabled=true;
+  }
+
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(560/sp);
+
+  timerPlay=setTimeout(()=>{
+    const next = nextIndexStep();
+    if(next <= idx){ pauseAll(); return; }
+
+    const nextAction = actions[next];
+    renderAction(next);
+
+    const pRelax=document.getElementById("pauseOnRelax").checked;
+    if(!document.getElementById("iterOnly").checked && nextAction && pRelax && nextAction.type==="relax"){
+      waitingContinue=true;
+      document.getElementById("btnCont").disabled=false;
+      return;
+    }
+    tickAuto();
+  }, delay);
+}
+
+/* ---------- Run/reset ---------- */
+function runFromInput(){
+  pauseAll();
+  showErr("");
+  try{
+    const parsed=parseInput(document.getElementById("inputArea").value);
+    model = { ...parsed, pos: layoutCircle(parsed.n) };
+    drawGraph();
+
+    const res = bellmanFordActions();
+    actions = res.acts;
+    idx=0;
+    rebuildIterOnly();
+    renderAction(0);
+  }catch(err){
+    showErr(err.message || String(err));
+  }
+}
+function resetToStart(){
+  pauseAll();
+  if(actions.length){
+    idx=0;
+    rebuildIterOnly();
+    renderAction(0);
+  }
+}
+
+/* ---------- wiring ---------- */
+document.getElementById("speed").addEventListener("input", e=>{
+  document.getElementById("speedText").textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+});
+document.getElementById("btnRun").addEventListener("click", runFromInput);
+document.getElementById("btnLoadSample").addEventListener("click", ()=>{
+  document.getElementById("inputArea").value = SAMPLE;
+  runFromInput();
+});
+document.getElementById("dirDirected").addEventListener("change", runFromInput);
+document.getElementById("dirUndirected").addEventListener("change", runFromInput);
+
+document.getElementById("tNode").addEventListener("input", ()=>{ if(actions.length) renderAction(idx); });
+
+document.getElementById("iterOnly").addEventListener("change", ()=>{
+  rebuildIterOnly();
+  if(document.getElementById("iterOnly").checked){
+    renderAction(iterOnlyIdx[iterPos]);
+  }else{
+    renderAction(idx);
+  }
+});
+
+document.getElementById("btnStep").addEventListener("click", ()=>{
+  pauseAll();
+  const next = nextIndexStep();
+  if(next > idx) renderAction(next);
+});
+document.getElementById("btnReset").addEventListener("click", resetToStart);
+
+document.getElementById("btnPlay").addEventListener("click", ()=>{
+  if(playing){ pauseAll(); return; }
+  playNormal();
+});
+document.getElementById("btnAuto").addEventListener("click", ()=>{
+  if(lectureMode){ pauseAll(); return; }
+  startAutoDemo();
+});
+document.getElementById("btnCont").addEventListener("click", ()=>{
+  if(!lectureMode) return;
+  continueRequested=true;
+});
+
+/* init */
+runFromInput();
+</script>
+</body>
+</html>

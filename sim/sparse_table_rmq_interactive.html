@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sparse Table (RMQ) Interactive – Range Minimum Query</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#101a33; --text:#e8ecff; --muted:#a9b3d6;
+      --accent:#7aa2ff; --good:#2ee59d; --warn:#ffcc66; --bad:#ff6b6b;
+      --shadow:0 12px 30px rgba(0,0,0,.35); --radius:16px; --stroke:rgba(255,255,255,.08);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);color:var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, #172a63 0%, var(--bg) 55%) fixed;}
+    header{max-width:1450px;margin:0 auto;padding:20px 18px 10px}
+    h1{margin:0 0 6px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.4}
+
+    .layout{max-width:1450px;margin:0 auto;padding:12px 18px 22px;display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .card h2{margin:0;font-size:14px;padding:12px 14px;border-bottom:1px solid var(--stroke);background:rgba(0,0,0,.12);color:#dfe6ff}
+    .content{padding:12px 14px}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button{
+      cursor:pointer;border:1px solid rgba(255,255,255,.12);
+      background: rgba(122,162,255,.14); color:var(--text);
+      border-radius:12px;padding:8px 10px;font-weight:800;font-size:13px;
+      transition:transform .06s ease, background .2s ease; white-space:nowrap;
+    }
+    button:hover{background:rgba(122,162,255,.22)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.08)}
+    button.secondary:hover{background:rgba(255,255,255,.12)}
+    button.danger{background:rgba(255,107,107,.16)}
+    button.danger:hover{background:rgba(255,107,107,.22)}
+    button.good{background:rgba(46,229,157,.16)}
+    button.good:hover{background:rgba(46,229,157,.24)}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      font-size:12px;color:#dfe6ff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.18)}
+    .mono{font-family:var(--mono);font-size:12px}
+    input[type="checkbox"]{transform:translateY(1px)}
+    .speed{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+    input[type="range"]{width:170px}
+
+    textarea{
+      width:100%;min-height:175px;resize:vertical;padding:10px 12px;border-radius:12px;
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);
+      color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.45;outline:none;
+    }
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .box{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;
+      max-height:320px;overflow:auto;
+    }
+    pre{margin:0;padding:12px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid var(--stroke);
+      overflow:auto;max-height:430px;font-family:var(--mono);font-size:12px;line-height:1.45}
+    .err{color:var(--bad);font-size:12px;margin-top:8px;display:none}
+
+    table{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid var(--stroke);
+      background:rgba(0,0,0,.12);font-size:12px}
+    th,td{padding:7px 8px;border-bottom:1px solid var(--stroke);text-align:center;font-family:var(--mono)}
+    th{color:#cfd7ff;background:rgba(255,255,255,.05);font-family:var(--sans)}
+    tr:last-child td{border-bottom:none}
+
+    td.active{background:rgba(255,204,102,.12)}
+    td.hit{background:rgba(46,229,157,.12)}
+    td.dim{opacity:.5}
+
+    .formula{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;line-height:1.45;
+    }
+    .tagOk{color:var(--good);font-weight:900}
+    .tagSkip{color:var(--muted);font-weight:900}
+    .tagNo{color:var(--bad);font-weight:900}
+
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .grid2,.grid3{grid-template-columns:1fr}
+      .speed{margin-left:0;width:100%;justify-content:space-between}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Sparse Table (RMQ) – Range Minimum Query</h1>
+  <div class="sub">
+    Build: <b>st[0][i]=a[i]</b>, <b>st[k][i]=min(st[k-1][i], st[k-1][i+2^(k-1)])</b>.
+    Query: k=floor(log2(len)), ans=min(st[k][l], st[k][r-2^k+1]).
+  </div>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <section class="card">
+    <h2>Hình động & bảng Sparse Table</h2>
+    <div class="content">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnPlay">▶ Play</button>
+        <button id="btnStep" class="secondary">⏭ Step</button>
+        <button id="btnReset" class="danger">↺ Reset</button>
+
+        <button id="btnAuto" class="good">🎓 Auto Demo</button>
+        <button id="btnCont" class="secondary" disabled>▶ Continue</button>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="pauseOnHit" checked />
+          Pause on “hit”
+        </label>
+
+        <div class="speed">
+          <span>Tốc độ</span>
+          <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1.2" />
+          <span class="badge"><span class="dot"></span><span id="speedText">1.2x</span></span>
+        </div>
+      </div>
+
+      <div class="row" style="margin-bottom:10px">
+        <span class="badge"><span class="dot"></span> phase=<b id="phaseLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:var(--warn);box-shadow:0 0 0 3px rgba(255,204,102,.18)"></span>
+          cell=<b id="cellLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.12)"></span>
+          step <b id="stepIdx">0</b>/<b id="stepTotal">0</b></span>
+        <span class="badge"><span class="dot" style="background:var(--good);box-shadow:0 0 0 3px rgba(46,229,157,.18)"></span>
+          action <b id="actionLabel">—</b></span>
+      </div>
+
+      <div class="formula" id="formulaBox"></div>
+
+      <div style="height:12px"></div>
+
+      <div class="grid2">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Array a[1..n]</div>
+          <div id="arrBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Query answers</div>
+          <div id="resBox" class="box"></div>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="muted" style="font-size:12px;margin:0 0 6px">Sparse Table (rows = k, cols = i)</div>
+      <div id="tableWrap" class="box" style="padding:0;overflow:auto;max-height:420px"></div>
+
+      <div style="height:12px"></div>
+      <div class="grid2">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Log</div>
+          <div id="log" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Output</div>
+          <div id="outputBox" class="box"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="card">
+    <h2>Input + C++ code</h2>
+    <div class="content">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnRun">⚙ Run</button>
+        <button id="btnLoadSample" class="secondary">📥 Load sample</button>
+
+        <span class="badge"><span class="dot"></span>
+          Format: <span class="mono">n</span> + array + <span class="mono">q</span> + q dòng: <span class="mono">Q l r</span>
+        </span>
+      </div>
+
+      <textarea id="inputArea" spellcheck="false"></textarea>
+      <div id="err" class="err"></div>
+
+      <div style="margin-top:12px">
+        <div class="muted" style="font-size:12px;margin:0 0 6px">C++ reference</div>
+        <pre id="cpp"></pre>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+document.getElementById('cpp').textContent =
+`// Sparse Table RMQ (min) - static array
+#include <bits/stdc++.h>
+using namespace std;
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n; cin>>n;
+  vector<long long>a(n+1);
+  for(int i=1;i<=n;i++) cin>>a[i];
+
+  int K = __lg(n);
+  vector<vector<long long>> st(K+1, vector<long long>(n+1));
+  for(int i=1;i<=n;i++) st[0][i]=a[i];
+
+  for(int k=1;k<=K;k++){
+    for(int i=1;i + (1<<k) - 1 <= n; i++){
+      st[k][i] = min(st[k-1][i], st[k-1][i + (1<<(k-1))]);
+    }
+  }
+
+  int q; cin>>q;
+  while(q--){
+    int l,r; cin>>l>>r;
+    int len=r-l+1;
+    int k=__lg(len);
+    cout << min(st[k][l], st[k][r - (1<<k) + 1]) << "\\n";
+  }
+}`;
+
+const SAMPLE =
+`10
+5 1 3 7 2 6 4 8 9 0
+6
+Q 1 5
+Q 4 7
+Q 2 2
+Q 6 10
+Q 3 9
+Q 1 10`;
+
+document.getElementById('inputArea').value = SAMPLE;
+
+let model=null;      // {n,a[1..n], queries[]}
+let st=null;         // st[k][i]
+let K=0;
+let actions=[];
+let idx=0;
+
+let playing=false;
+let timer=null;
+
+let lecture=false;
+let waiting=false;
+let cont=false;
+
+function showErr(msg){
+  const el=document.getElementById("err");
+  if(!msg){ el.style.display="none"; el.textContent=""; return; }
+  el.style.display="block"; el.textContent=msg;
+}
+function lg2(x){ return Math.floor(Math.log2(x)); }
+
+function parseInput(txt){
+  const lines=txt.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>0 && !s.startsWith("#"));
+  let p=0;
+  const n=parseInt(lines[p++],10);
+  if(!Number.isFinite(n) || n<=0) throw new Error("n phải > 0");
+  if(p>=lines.length) throw new Error("Thiếu dòng mảng.");
+  const arr=lines[p++].split(/\s+/).map(Number);
+  if(arr.length!==n || arr.some(x=>!Number.isFinite(x))) throw new Error("Dòng mảng phải có đúng n số.");
+  const a=[0,...arr];
+
+  if(p>=lines.length) throw new Error("Thiếu q.");
+  const q=parseInt(lines[p++],10);
+  if(!Number.isFinite(q) || q<0) throw new Error("q >= 0");
+  if(lines.length !== p+q) throw new Error(`Cần ${q} dòng query, nhưng có ${lines.length-p}.`);
+
+  const queries=[];
+  for(let i=0;i<q;i++){
+    const parts=lines[p+i].split(/\s+/);
+    if(parts[0] !== "Q" || parts.length<3) throw new Error(`Dòng ${p+i+1}: Q l r`);
+    const l=parseInt(parts[1],10), r=parseInt(parts[2],10);
+    if(!(l>=1&&l<=n&&r>=1&&r<=n&&l<=r)) throw new Error("Q: 1<=l<=r<=n");
+    queries.push({l,r});
+  }
+  return {n,a,queries};
+}
+
+/* build actions */
+function makeActions(){
+  const acts=[];
+  K=lg2(model.n);
+  st=Array.from({length:K+1}, ()=> Array(model.n+1).fill(null));
+
+  function snap(type, extra={}){
+    acts.push({
+      type,
+      phase: extra.phase ?? "",
+      k: extra.k ?? -1,
+      i: extra.i ?? -1,
+      l: extra.l, r: extra.r,
+      kq: extra.kq,
+      i2: extra.i2,
+      ret: extra.ret,
+      msg: extra.msg || type,
+      st: st.map(row=>row.slice())  // snapshot for table render
+    });
+  }
+
+  snap("init",{phase:"build", msg:`Init: K=floor(log2(n))=${K}`});
+
+  // build k=0
+  for(let i=1;i<=model.n;i++){
+    st[0][i]=model.a[i];
+    snap("build_set",{phase:"build", k:0, i, msg:`st[0][${i}] = a[${i}] = ${model.a[i]}`});
+  }
+
+  for(let k=1;k<=K;k++){
+    const len=1<<k;
+    for(let i=1; i+len-1<=model.n; i++){
+      const a1=st[k-1][i];
+      const a2=st[k-1][i+(1<<(k-1))];
+      st[k][i]=Math.min(a1,a2);
+      snap("build_cell",{phase:"build", k, i, i2:i+(1<<(k-1)), msg:
+        `st[${k}][${i}] = min(st[${k-1}][${i}]=${a1}, st[${k-1}][${i2}=i+2^{k-1}]=${a2}) = ${st[k][i]}`
+      });
+    }
+  }
+  snap("built",{phase:"build", msg:"Build done."});
+
+  // queries
+  for(let qi=0; qi<model.queries.length; qi++){
+    const {l,r}=model.queries[qi];
+    const len=r-l+1;
+    const kq=lg2(len);
+    const i1=l;
+    const i2=r-(1<<kq)+1;
+    snap("q_start",{phase:"query", l,r, kq, msg:`Query Q ${l} ${r}: len=${len}, k=floor(log2(len))=${kq}`});
+    snap("q_pick1",{phase:"query", k:kq, i:i1, l,r, kq, msg:`Pick st[${kq}][${i1}] for [${i1}..${i1+(1<<kq)-1}]`});
+    snap("q_pick2",{phase:"query", k:kq, i:i2, l,r, kq, msg:`Pick st[${kq}][${i2}] for [${i2}..${i2+(1<<kq)-1}]`});
+    const ans=Math.min(st[kq][i1], st[kq][i2]);
+    snap("q_done",{phase:"query", k:kq, i:i1, i2, l,r, kq, ret:ans, msg:`Answer = min(${st[kq][i1]}, ${st[kq][i2]}) = ${ans}`});
+  }
+
+  snap("done",{phase:"query", msg:"All queries completed."});
+  return acts;
+}
+
+/* render table */
+function buildTableHTML(snapshot, a){
+  const n=model.n;
+  let html=`<table><thead><tr><th>k \\ i</th>`;
+  for(let i=1;i<=n;i++) html += `<th>${i}</th>`;
+  html += `</tr></thead><tbody>`;
+
+  for(let k=0;k<snapshot.length;k++){
+    html += `<tr><th>${k}</th>`;
+    for(let i=1;i<=n;i++){
+      const v=snapshot[k][i];
+      const valid = (v!==null && v!==undefined);
+      let cls="";
+      if(a && a.k===k && a.i===i) cls="active";
+      if(a && a.type==="q_pick2" && a.k===k && a.i===i) cls="hit";
+      if(a && a.type==="q_pick1" && a.k===k && a.i===i) cls="hit";
+      if(!valid) cls = (cls?cls+" ":"") + "dim";
+      html += `<td class="${cls}">${valid ? v : ""}</td>`;
+    }
+    html += `</tr>`;
+  }
+  html += `</tbody></table>`;
+  return html;
+}
+
+function renderFormula(a){
+  const box=document.getElementById("formulaBox");
+  if(a.phase==="build"){
+    if(a.type==="build_cell"){
+      box.innerHTML =
+        `<b>BUILD</b>\n`+
+        `st[k][i] = min(st[k-1][i], st[k-1][i+2^(k-1)])\n`+
+        `k=${a.k}, i=${a.i}\n`+
+        `<span class="tagOk">st[${a.k}][${a.i}] = ${a.st[a.k][a.i]}</span>`;
+      return;
+    }
+    box.innerHTML = `<b>BUILD</b>\nFill st[0], then build higher k by combining 2 blocks.`;
+    return;
+  }
+  if(a.phase==="query"){
+    if(a.type==="q_done"){
+      box.innerHTML =
+        `<b>QUERY</b>\nlen=${a.r-a.l+1}, k=floor(log2(len))=${a.kq}\n`+
+        `ans = min(st[k][l], st[k][r-2^k+1])\n`+
+        `<span class="tagOk">= ${a.ret}</span>`;
+      return;
+    }
+    box.innerHTML =
+      `<b>QUERY</b>\nlen=${a.r-a.l+1}, k=floor(log2(len))\n`+
+      `use 2 blocks length 2^k covering [l..r].`;
+    return;
+  }
+  box.innerHTML = `Sparse Table RMQ.`;
+}
+
+function outputsSoFar(){
+  const arr=[];
+  for(let k=0;k<=idx;k++){
+    const a=actions[k];
+    if(a.type==="q_done" && typeof a.ret==="number"){
+      arr.push(`Q ${a.l} ${a.r} => ${a.ret}`);
+    }
+  }
+  return arr;
+}
+function buildFinalOutput(){
+  const answers=[];
+  for(const a of actions){
+    if(a.type==="q_done" && typeof a.ret==="number"){
+      answers.push(`Q ${a.l} ${a.r} => ${a.ret}`);
+    }
+  }
+  let out=`Sparse Table RMQ (min)\n`;
+  out += `n=${model.n}, K=${K}\n`;
+  out += `queries answered: ${answers.length}\n\n`;
+  out += answers.length ? answers.join("\n") : "(no queries)";
+  return out;
+}
+
+function renderAction(i){
+  idx=Math.max(0, Math.min(i, actions.length-1));
+  const a=actions[idx];
+
+  document.getElementById("stepIdx").textContent = idx;
+  document.getElementById("stepTotal").textContent = Math.max(0, actions.length-1);
+  document.getElementById("actionLabel").textContent = a.type;
+
+  document.getElementById("phaseLabel").textContent = a.phase || "—";
+  if(a.k!==-1 && a.i!==-1) document.getElementById("cellLabel").textContent = `k=${a.k}, i=${a.i}`;
+  else document.getElementById("cellLabel").textContent = "—";
+
+  renderFormula(a);
+
+  document.getElementById("arrBox").textContent = model.a.slice(1).map((v,i)=>`${i+1}:${v}`).join("  ");
+
+  // table
+  document.getElementById("tableWrap").innerHTML = buildTableHTML(a.st, a);
+
+  const log=document.getElementById("log");
+  log.textContent = actions.slice(0, idx+1).map((x,k)=>`${String(k).padStart(3,'0')}: ${x.msg}`).join("\n");
+  log.scrollTop=log.scrollHeight;
+
+  const done=outputsSoFar();
+  document.getElementById("resBox").textContent = done.length ? done.join("\n") : "(chưa có query)";
+  document.getElementById("outputBox").textContent = buildFinalOutput();
+}
+
+/* playback */
+function pauseAll(){
+  playing=false; lecture=false; waiting=false; cont=false;
+  document.getElementById("btnPlay").textContent="▶ Play";
+  document.getElementById("btnAuto").textContent="🎓 Auto Demo";
+  document.getElementById("btnCont").disabled=true;
+  if(timer){ clearTimeout(timer); timer=null; }
+}
+function nextIndex(){ return Math.min(actions.length-1, idx+1); }
+
+function playNormal(){
+  if(playing) return;
+  pauseAll();
+  playing=true;
+  document.getElementById("btnPlay").textContent="⏸ Pause";
+  tickNormal();
+}
+function tickNormal(){
+  if(!playing) return;
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(620/sp);
+  timer=setTimeout(()=>{
+    const next=nextIndex();
+    if(next>idx){ renderAction(next); tickNormal(); }
+    else pauseAll();
+  }, delay);
+}
+
+function startAuto(){
+  if(lecture) return;
+  pauseAll();
+  lecture=true;
+  document.getElementById("btnAuto").textContent="⏸ Stop Auto Demo";
+  tickAuto();
+}
+function tickAuto(){
+  if(!lecture) return;
+
+  if(waiting && !cont){
+    timer=setTimeout(tickAuto, 80);
+    return;
+  }
+  if(cont){
+    cont=false; waiting=false;
+    document.getElementById("btnCont").disabled=true;
+  }
+
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(560/sp);
+
+  timer=setTimeout(()=>{
+    const next=nextIndex();
+    if(next<=idx){ pauseAll(); return; }
+    const nextAction=actions[next];
+    renderAction(next);
+
+    const pauseOnHit=document.getElementById("pauseOnHit").checked;
+    if(nextAction && pauseOnHit && (nextAction.type==="build_cell" || nextAction.type==="q_pick1" || nextAction.type==="q_pick2" || nextAction.type==="q_done")){
+      waiting=true;
+      document.getElementById("btnCont").disabled=false;
+      return;
+    }
+    tickAuto();
+  }, delay);
+}
+
+/* run */
+function runFromInput(){
+  pauseAll();
+  showErr("");
+  try{
+    model=parseInput(document.getElementById("inputArea").value);
+    actions=makeActions();
+    idx=0;
+    renderAction(0);
+  }catch(e){
+    showErr(e.message || String(e));
+  }
+}
+function resetToStart(){
+  pauseAll();
+  if(actions.length){ idx=0; renderAction(0); }
+}
+
+/* wiring */
+document.getElementById("speed").addEventListener("input", e=>{
+  document.getElementById("speedText").textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+});
+document.getElementById("btnRun").addEventListener("click", runFromInput);
+document.getElementById("btnLoadSample").addEventListener("click", ()=>{
+  document.getElementById("inputArea").value=SAMPLE;
+  runFromInput();
+});
+document.getElementById("btnStep").addEventListener("click", ()=>{
+  pauseAll();
+  const next=nextIndex();
+  if(next>idx) renderAction(next);
+});
+document.getElementById("btnReset").addEventListener("click", resetToStart);
+document.getElementById("btnPlay").addEventListener("click", ()=>{
+  if(playing){ pauseAll(); return; }
+  playNormal();
+});
+document.getElementById("btnAuto").addEventListener("click", ()=>{
+  if(lecture){ pauseAll(); return; }
+  startAuto();
+});
+document.getElementById("btnCont").addEventListener("click", ()=>{
+  if(!lecture) return;
+  cont=true;
+});
+
+/* init */
+runFromInput();
+</script>
+</body>
+</html>

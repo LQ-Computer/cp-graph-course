@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DFS Full Graph Interactive (Directed/Undirected) — Final</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#101a33; --text:#e8ecff; --muted:#a9b3d6;
+      --accent:#7aa2ff; --good:#2ee59d; --warn:#ffcc66; --bad:#ff6b6b;
+      --edge:#9aa7d6; --edgeHi:#ffcc66; --edgeTree:#2ee59d; --edgePath:#2ee59d;
+      --node:#1b2b57; --nodeBorder:#6f86ff;
+      --shadow:0 12px 30px rgba(0,0,0,.35); --radius:16px;
+      --stroke:rgba(255,255,255,.08);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:var(--sans); color:var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, #172a63 0%, var(--bg) 55%) fixed;
+    }
+    header{max-width:1250px;margin:0 auto;padding:20px 18px 10px}
+    h1{margin:0 0 6px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.4}
+
+    .layout{max-width:1250px;margin:0 auto;padding:12px 18px 22px;display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .card h2{margin:0;font-size:14px;padding:12px 14px;border-bottom:1px solid var(--stroke);background:rgba(0,0,0,.12);color:#dfe6ff}
+    .content{padding:12px 14px}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button{
+      cursor:pointer;border:1px solid rgba(255,255,255,.12);
+      background: rgba(122,162,255,.14); color:var(--text);
+      border-radius:12px;padding:8px 10px;font-weight:800;font-size:13px;
+      transition:transform .06s ease, background .2s ease; white-space:nowrap;
+    }
+    button:hover{background:rgba(122,162,255,.22)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.08)}
+    button.secondary:hover{background:rgba(255,255,255,.12)}
+    button.danger{background:rgba(255,107,107,.16)}
+    button.danger:hover{background:rgba(255,107,107,.22)}
+    button.good{background:rgba(46,229,157,.16)}
+    button.good:hover{background:rgba(46,229,157,.24)}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      font-size:12px;color:#dfe6ff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.18)}
+    .mono{font-family:var(--mono);font-size:12px}
+    input[type="number"]{
+      width:70px;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);color:var(--text);font-family:var(--mono);
+    }
+    input[type="checkbox"], input[type="radio"]{transform:translateY(1px)}
+    .speed{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+    input[type="range"]{width:170px}
+
+    textarea{
+      width:100%;min-height:190px;resize:vertical;padding:10px 12px;border-radius:12px;
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);
+      color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.45;outline:none;
+    }
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .box{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;
+      max-height:260px;overflow:auto;
+    }
+    pre{margin:0;padding:12px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid var(--stroke);
+      overflow:auto;max-height:360px;font-family:var(--mono);font-size:12px;line-height:1.45}
+    table{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid var(--stroke);background:rgba(0,0,0,.12);font-size:12px}
+    th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:left}
+    th{color:#cfd7ff;background:rgba(255,255,255,.05)}
+    tr:last-child td{border-bottom:none}
+    .err{color:var(--bad);font-size:12px;margin-top:8px;display:none}
+
+    .svgWrap{padding:12px 14px 16px}
+    svg{width:100%;height:auto;display:block;background:rgba(0,0,0,.10);border:1px solid var(--stroke);border-radius:14px}
+
+    .edge{
+      stroke:var(--edge); stroke-width:3.5; opacity:.85;
+      transition: stroke .20s ease, opacity .20s ease, stroke-width .20s ease;
+    }
+    .edge.highlight{stroke:var(--edgeHi);opacity:1}
+    .edge.tree{stroke:var(--edgeTree);opacity:1;stroke-width:5}
+    .edge.path{stroke:var(--edgePath);opacity:1;stroke-width:6}
+
+    .nodeCircle{
+      fill:var(--node); stroke:var(--nodeBorder); stroke-width:3;
+      transition: stroke .20s ease, filter .20s ease, opacity .20s ease;
+    }
+    .nodeCircle.white{opacity:.85}
+    .nodeCircle.gray{stroke:#a9b3d6;opacity:1}
+    .nodeCircle.black{stroke:var(--good);opacity:1}
+    .nodeCircle.active{stroke:var(--warn); filter: drop-shadow(0 0 10px rgba(255,204,102,.18));}
+
+    .nodeLabel{fill:#f2f5ff;font-weight:900;font-size:13px;font-family:var(--mono)}
+    .nodeMeta{fill:#cfd7ff;font-size:11px;font-family:var(--mono);opacity:.95}
+
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .grid2,.grid3{grid-template-columns:1fr}
+      .speed{margin-left:0;width:100%;justify-content:space-between}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>DFS Full Graph Interactive (Directed / Undirected)</h1>
+  <div class="sub">
+    DFS toàn đồ thị: duyệt các đỉnh <b>1..n</b>, nếu WHITE thì bắt đầu DFS mới (component mới).
+    <b>Vô hướng:</b> cạnh ban đầu <b>không có mũi tên</b> — chỉ khi tô <b>đường đi (path)</b> mới hiện mũi tên (nhỏ) để tránh rối.
+  </div>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <section class="card">
+    <h2>Hình động & trạng thái</h2>
+    <div class="svgWrap">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnPlay">▶ Play</button>
+        <button id="btnStep" class="secondary">⏭ Step</button>
+        <button id="btnReset" class="danger">↺ Reset</button>
+
+        <button id="btnAuto" class="good">🎓 Auto Demo</button>
+        <button id="btnCont" class="secondary" disabled>▶ Continue</button>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="pauseOnVisit" checked />
+          Pause on Visit
+        </label>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="pauseOnBacktrack" />
+          Pause on Backtrack
+        </label>
+
+        <div class="speed">
+          <span>Tốc độ</span>
+          <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1.2" />
+          <span class="badge"><span class="dot"></span><span id="speedText">1.2x</span></span>
+        </div>
+      </div>
+
+      <svg id="svg" viewBox="0 0 900 520">
+        <defs>
+          <!-- Smaller arrows to reduce clutter -->
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="rgba(154,167,214,.95)"></path>
+          </marker>
+          <marker id="arrowHi" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="rgba(255,204,102,.98)"></path>
+          </marker>
+          <marker id="arrowTree" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="rgba(46,229,157,.98)"></path>
+          </marker>
+        </defs>
+
+        <g id="edges"></g>
+        <g id="nodes"></g>
+      </svg>
+
+      <div class="row" style="margin-top:10px">
+        <span class="badge"><span class="dot"></span> root=<b id="rootLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:var(--warn);box-shadow:0 0 0 3px rgba(255,204,102,.18)"></span>
+          u=<b id="activeNode">—</b></span>
+        <span class="badge"><span class="dot" style="background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.12)"></span>
+          step <b id="stepIdx">0</b>/<b id="stepTotal">0</b></span>
+        <span class="badge"><span class="dot" style="background:var(--good);box-shadow:0 0 0 3px rgba(46,229,157,.18)"></span>
+          action <b id="actionLabel">—</b></span>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="grid3">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">color/parent/times/comp</div>
+          <table id="stateTable">
+            <thead><tr><th>v</th><th>color</th><th>par</th><th>tin</th><th>tout</th><th>comp</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Call stack (top first)</div>
+          <table id="stackTable">
+            <thead><tr><th>#</th><th>frame</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Log</div>
+          <div id="log" class="box"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="card">
+    <h2>Input/Output + C++ code</h2>
+    <div class="content">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnRun">⚙ Run</button>
+        <button id="btnLoadSample" class="secondary">📥 Load sample</button>
+
+        <span class="badge"><span class="dot"></span>
+          Format: <span class="mono">n m</span> + m dòng <span class="mono">u v</span>
+        </span>
+
+        <label class="badge" style="gap:8px">
+          <input type="radio" name="dir" id="dirDirected" checked />
+          Có hướng
+        </label>
+        <label class="badge" style="gap:8px">
+          <input type="radio" name="dir" id="dirUndirected" />
+          Vô hướng
+        </label>
+
+        <label class="badge" style="gap:8px">
+          sort adj
+          <input type="checkbox" id="sortAdj" checked />
+        </label>
+
+        <label class="badge" style="gap:8px">
+          t =
+          <input type="number" id="targetNode" min="1" value="8" />
+        </label>
+      </div>
+
+      <textarea id="inputArea" spellcheck="false"></textarea>
+      <div id="err" class="err"></div>
+
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Output</div>
+          <div id="outputBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">C++ reference</div>
+          <pre id="cpp"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ---------- C++ reference (full graph) ---------- */
+document.getElementById('cpp').textContent =
+`#include <bits/stdc++.h>
+using namespace std;
+
+int n, m;
+vector<vector<int>> g;
+vector<int> color, parent, comp, tin, tout, order;
+int timer = 0, comps = 0;
+
+void dfs(int u){
+  color[u]=1;              // GRAY
+  tin[u]=++timer;
+  order.push_back(u);
+
+  for(int v: g[u]){
+    if(color[v]==0){
+      parent[v]=u;
+      comp[v]=comp[u];
+      dfs(v);
+    }
+  }
+
+  color[u]=2;              // BLACK
+  tout[u]=++timer;
+}
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  cin >> n >> m;
+  g.assign(n+1, {});
+  for(int i=0;i<m;i++){
+    int u,v; cin >> u >> v;
+    g[u].push_back(v);         // directed
+    // if undirected: g[v].push_back(u);
+  }
+  for(int i=1;i<=n;i++) sort(g[i].begin(), g[i].end());
+
+  color.assign(n+1,0);
+  parent.assign(n+1,-1);
+  comp.assign(n+1,0);
+  tin.assign(n+1,0);
+  tout.assign(n+1,0);
+
+  for(int i=1;i<=n;i++){
+    if(color[i]==0){
+      comps++;
+      comp[i]=comps;
+      dfs(i);
+    }
+  }
+}`;
+
+/* ---------- Sample input: 9 nodes, 2 components ---------- */
+const SAMPLE =
+`9 10
+1 2
+2 3
+3 4
+4 2
+2 5
+6 7
+7 8
+8 9
+9 7
+6 9`;
+
+document.getElementById('inputArea').value = SAMPLE;
+
+/* ---------- SVG refs ---------- */
+const svgEdges = document.getElementById('edges');
+const svgNodes = document.getElementById('nodes');
+const edgeId=(u,v)=>`e-${u}-${v}`;
+const nodeId=(u)=>`n-${u}`;
+
+/* ---------- Global state ---------- */
+let model=null;       // {n, edges, pos, directed}
+let actions=[];
+let idx=0;
+
+let playing=false;
+let timerPlay=null;
+
+let lectureMode=false;
+let waitingContinue=false;
+let continueRequested=false;
+
+/* ---------- Helpers ---------- */
+function showErr(msg){
+  const el=document.getElementById('err');
+  if(!msg){ el.style.display="none"; el.textContent=""; return; }
+  el.style.display="block"; el.textContent=msg;
+}
+function layoutCircle(n){
+  const cx=450, cy=260;
+  const R=Math.max(150, Math.min(235, 60*n));
+  const pos={};
+  for(let i=1;i<=n;i++){
+    const ang=(-Math.PI/2) + (2*Math.PI*(i-1)/n);
+    pos[i]=[cx+R*Math.cos(ang), cy+R*Math.sin(ang)];
+  }
+  return pos;
+}
+
+/* ---------- Parse input ---------- */
+function parseInput(text){
+  const lines=text.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>0 && !s.startsWith("#"));
+  if(!lines.length) throw new Error("Input rỗng.");
+  const first=lines[0].split(/\s+/).map(Number);
+  if(first.length<2 || first.some(Number.isNaN)) throw new Error("Dòng đầu: n m");
+  const [n,m]=first;
+  if(n<=0 || m<0) throw new Error("n>0, m>=0");
+  if(lines.length!==m+1) throw new Error(`Cần ${m} dòng cạnh, nhưng có ${lines.length-1}.`);
+
+  const directed = document.getElementById('dirDirected').checked;
+  const edges=[];
+  for(let i=1;i<=m;i++){
+    const parts=lines[i].split(/\s+/).map(Number);
+    if(parts.length<2 || parts.some(Number.isNaN)) throw new Error(`Dòng ${i+1}: u v`);
+    let [u,v]=parts;
+    if(u<1||u>n||v<1||v>n) throw new Error(`Dòng ${i+1}: u,v trong [1..n]`);
+    edges.push([u,v]);
+    if(!directed && u!==v) edges.push([v,u]);
+  }
+  return {n, edges, directed};
+}
+
+/* ---------- Draw graph ---------- */
+function drawGraph(){
+  svgEdges.innerHTML=""; svgNodes.innerHTML="";
+  if(!model) return;
+
+  for(const [u,v] of model.edges){
+    const [x1,y1]=model.pos[u], [x2,y2]=model.pos[v];
+    const r=22, dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy)||1;
+    const sx=x1+(dx/len)*r, sy=y1+(dy/len)*r;
+    const tx=x2-(dx/len)*r, ty=y2-(dy/len)*r;
+
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute("x1",sx); line.setAttribute("y1",sy);
+    line.setAttribute("x2",tx); line.setAttribute("y2",ty);
+    line.setAttribute("class","edge");
+    line.setAttribute("id",edgeId(u,v));
+
+    // Directed: show arrows by default. Undirected: NO arrows by default.
+    if(model.directed){
+      line.setAttribute("marker-end","url(#arrow)");
+    }else{
+      line.removeAttribute("marker-end");
+    }
+    svgEdges.appendChild(line);
+  }
+
+  for(let u=1;u<=model.n;u++){
+    const [x,y]=model.pos[u];
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("id",nodeId(u));
+
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",22);
+    c.setAttribute("class","nodeCircle white");
+    g.appendChild(c);
+
+    const L=document.createElementNS("http://www.w3.org/2000/svg","text");
+    L.setAttribute("x",x); L.setAttribute("y",y+4);
+    L.setAttribute("text-anchor","middle");
+    L.setAttribute("class","nodeLabel");
+    L.textContent=u;
+    g.appendChild(L);
+
+    const M=document.createElementNS("http://www.w3.org/2000/svg","text");
+    M.setAttribute("x",x); M.setAttribute("y",y+40);
+    M.setAttribute("text-anchor","middle");
+    M.setAttribute("class","nodeMeta");
+    M.setAttribute("id",`meta-${u}`);
+    M.textContent="tin=0 tout=0 c=0";
+    g.appendChild(M);
+
+    svgNodes.appendChild(g);
+  }
+}
+
+function clearHighlights(){
+  for(const [u,v] of model.edges){
+    const e=document.getElementById(edgeId(u,v));
+    if(!e) continue;
+    e.classList.remove("highlight","tree","path");
+
+    // reset marker: directed has default arrow, undirected none
+    if(model.directed){
+      e.setAttribute("marker-end","url(#arrow)");
+    }else{
+      e.removeAttribute("marker-end");
+    }
+  }
+  for(let u=1;u<=model.n;u++){
+    const g=document.getElementById(nodeId(u));
+    if(!g) continue;
+    const c=g.querySelector("circle");
+    c.classList.remove("active","white","gray","black");
+    c.classList.add("white");
+  }
+}
+
+/* ---------- Build adjacency ---------- */
+function buildAdj(){
+  const g=Array.from({length:model.n+1},()=>[]);
+  for(const [u,v] of model.edges) g[u].push(v);
+  if(document.getElementById('sortAdj').checked){
+    for(let i=1;i<=model.n;i++) g[i].sort((a,b)=>a-b);
+  }
+  return g;
+}
+
+/* ---------- DFS full graph actions ----------
+   Simulate recursion with stack frames: {u, i}
+   Outer loop: for start=1..n if WHITE => new component root
+*/
+function dfsFullActions(){
+  const n=model.n;
+  const adj=buildAdj();
+  const color=Array(n+1).fill(0);
+  const parent=Array(n+1).fill(-1);
+  const comp=Array(n+1).fill(0);
+  const tin=Array(n+1).fill(0);
+  const tout=Array(n+1).fill(0);
+  const order=[];
+  let tim=0, comps=0;
+
+  const stack=[];
+  const treeEdges=new Set();
+  let currentRoot = -1;
+
+  const acts=[];
+  const snap=(type, extra={})=>{
+    acts.push({
+      type,
+      color:color.slice(), parent:parent.slice(), comp:comp.slice(),
+      tin:tin.slice(), tout:tout.slice(), order:order.slice(),
+      stack:stack.map(f=>({u:f.u, i:f.i})),
+      treeEdges:[...treeEdges],
+      currentRoot,
+      ...extra
+    });
+  };
+
+  snap("init", { msg:"Init full DFS." });
+
+  for(let start=1; start<=n; start++){
+    if(color[start]!==0) continue;
+    comps++;
+    currentRoot = start;
+    comp[start]=comps;
+    snap("new_component", { u:start, msg:`New component #${comps}: root=${start}` });
+
+    // visit root
+    color[start]=1; tin[start]=++tim; order.push(start);
+    stack.push({u:start, i:0});
+    snap("visit", { u:start, msg:`Visit ${start}: GRAY, tin=${tin[start]} (push frame)` });
+
+    // DFS loop
+    while(stack.length){
+      const top=stack[stack.length-1];
+      const u=top.u;
+
+      if(top.i >= adj[u].length){
+        color[u]=2; tout[u]=++tim;
+        stack.pop();
+        snap("backtrack", { u, msg:`Backtrack ${u}: BLACK, tout=${tout[u]} (pop frame)` });
+        continue;
+      }
+
+      const v = adj[u][top.i];
+      top.i++;
+      snap("edge", { u, v, msg:`Explore edge ${u}→${v}` });
+
+      if(color[v]===0){
+        parent[v]=u;
+        comp[v]=comp[u];
+        treeEdges.add(`${u}->${v}`);
+        snap("tree_edge", { u, v, msg:`Tree edge: parent[${v}]=${u}, comp=${comp[v]}` });
+
+        color[v]=1; tin[v]=++tim; order.push(v);
+        stack.push({u:v, i:0});
+        snap("visit", { u:v, msg:`Visit ${v}: GRAY, tin=${tin[v]} (push frame)` });
+      }else{
+        snap("skip", { u, v, msg:`Skip ${u}→${v} (color[v]=${color[v]===1?"GRAY":"BLACK"})` });
+      }
+    }
+  }
+
+  snap("done", { msg:`Done. components=${Math.max(...comp)}` });
+  return acts;
+}
+
+/* ---------- Tree path root(comp)->t based on final parent/comp ---------- */
+function computeTreePathToT(last, t){
+  if(!t || t<1 || t>model.n) return null;
+  if(last.color[t]===0) return null;
+
+  const rootComp = last.comp[t];
+  let root = -1;
+  for(let i=1;i<=model.n;i++){
+    if(last.comp[i]===rootComp && last.parent[i]===-1){
+      root=i; break;
+    }
+  }
+  if(root===-1) return null;
+
+  const path=[];
+  let cur=t;
+  while(cur!==-1){
+    path.push(cur);
+    if(cur===root) break;
+    cur=last.parent[cur];
+  }
+  if(path[path.length-1]!==root) return null;
+  path.reverse();
+  return {root, path};
+}
+
+/* Path: ONLY here we show arrows (even if undirected) */
+function highlightPath(path){
+  if(!path || path.length<2) return;
+  for(let i=0;i<path.length-1;i++){
+    const u=path[i], v=path[i+1];
+    const e=document.getElementById(edgeId(u,v));
+    if(e){
+      e.classList.add("path");
+      e.setAttribute("marker-end","url(#arrowTree)"); // arrow appears only on path
+    }
+  }
+}
+
+/* ---------- Tables ---------- */
+function colorName(c){ return c===0 ? "WHITE" : (c===1 ? "GRAY" : "BLACK"); }
+
+function updateStateTable(a){
+  const tbody=document.querySelector("#stateTable tbody");
+  tbody.innerHTML="";
+  for(let v=1; v<=model.n; v++){
+    const tr=document.createElement("tr");
+    tr.innerHTML = `<td>${v}</td><td>${colorName(a.color[v])}</td><td>${a.parent[v]===-1?"—":a.parent[v]}</td><td>${a.tin[v]}</td><td>${a.tout[v]}</td><td>${a.comp[v]||0}</td>`;
+    tbody.appendChild(tr);
+    document.getElementById(`meta-${v}`).textContent = `tin=${a.tin[v]} tout=${a.tout[v]} c=${a.comp[v]||0}`;
+  }
+}
+function updateStackTable(a){
+  const tbody=document.querySelector("#stackTable tbody");
+  tbody.innerHTML="";
+  const frames = a.stack.slice().reverse();
+  if(!frames.length){
+    const tr=document.createElement("tr");
+    tr.innerHTML = `<td colspan="2" class="muted">∅</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+  frames.forEach((f,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML = `<td>${i+1}</td><td>u=${f.u}, next_i=${f.i}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* Tree edges: undirected => no arrows (only color). directed => arrows allowed */
+function highlightTreeEdges(a){
+  for(const s of a.treeEdges){
+    const [u,v]=s.split("->").map(Number);
+    const e=document.getElementById(edgeId(u,v));
+    if(e){
+      e.classList.add("tree");
+      if(model.directed){
+        e.setAttribute("marker-end","url(#arrowTree)");
+      }else{
+        e.removeAttribute("marker-end");
+      }
+    }
+  }
+}
+
+/* ---------- Output ---------- */
+function buildOutput(last){
+  let out = `DFS full graph\n`;
+  out += `Directed: ${model.directed ? "YES" : "NO (undirected)"}\n\n`;
+  out += `Visited order: ${last.order.join(" ")}\n\n`;
+
+  const comps = Math.max(...last.comp);
+  out += `Components = ${isFinite(comps)?comps:0}\n`;
+  for(let c=1;c<=comps;c++){
+    const nodes=[];
+    for(let v=1;v<=model.n;v++) if(last.comp[v]===c) nodes.push(v);
+    out += `comp #${c}: ${nodes.join(" ")}\n`;
+  }
+
+  out += `\nParent:\n`;
+  for(let v=1;v<=model.n;v++) out += `par[${v}] = ${last.parent[v]===-1?"-1":last.parent[v]}\n`;
+
+  out += `\nTimes (tin/tout):\n`;
+  for(let v=1;v<=model.n;v++) out += `v=${v}: tin=${last.tin[v]}, tout=${last.tout[v]}\n`;
+
+  const t = parseInt(document.getElementById('targetNode').value, 10);
+  out += `\nDFS-tree path (root(comp(t)) → t), t=${isNaN(t)?"—":t}:\n`;
+  const res = computeTreePathToT(last, t);
+  if(!res) out += "(không có / t chưa được thăm)";
+  else out += `root=${res.root}: ${res.path.join(" - ")}`;
+  return out.trimEnd();
+}
+
+/* ---------- Render ---------- */
+function renderAction(i){
+  idx = Math.max(0, Math.min(i, actions.length-1));
+  const a = actions[idx];
+
+  document.getElementById('stepIdx').textContent = idx;
+  document.getElementById('stepTotal').textContent = Math.max(0, actions.length-1);
+  document.getElementById('activeNode').textContent = a.u ?? "—";
+  document.getElementById('actionLabel').textContent = a.type;
+  document.getElementById('rootLabel').textContent = (a.currentRoot && a.currentRoot!==-1) ? a.currentRoot : "—";
+
+  clearHighlights();
+
+  // node colors
+  for(let v=1;v<=model.n;v++){
+    const g=document.getElementById(nodeId(v));
+    const c=g.querySelector("circle");
+    c.classList.remove("white","gray","black");
+    if(a.color[v]===0) c.classList.add("white");
+    if(a.color[v]===1) c.classList.add("gray");
+    if(a.color[v]===2) c.classList.add("black");
+  }
+
+  // active node
+  if(a.u){
+    const g=document.getElementById(nodeId(a.u));
+    g.querySelector("circle").classList.add("active");
+  }
+
+  // current edge highlight: directed => highlight arrowHi, undirected => no arrow
+  if(a.type==="edge" || a.type==="tree_edge" || a.type==="skip"){
+    const e=document.getElementById(edgeId(a.u,a.v));
+    if(e){
+      e.classList.add("highlight");
+      if(model.directed){
+        e.setAttribute("marker-end","url(#arrowHi)");
+      }else{
+        e.removeAttribute("marker-end");
+      }
+    }
+  }
+
+  updateStateTable(a);
+  updateStackTable(a);
+  highlightTreeEdges(a);
+
+  // Path root(comp(t))->t (based on final): ONLY here arrows appear for undirected too
+  const last = actions[actions.length-1];
+  const t = parseInt(document.getElementById('targetNode').value, 10);
+  const res = computeTreePathToT(last, t);
+  if(res) highlightPath(res.path);
+
+  const log=document.getElementById('log');
+  log.textContent = actions.slice(0, idx+1).map((x,k)=>`${String(k).padStart(2,'0')}: ${x.msg || x.type}`).join("\n");
+  log.scrollTop = log.scrollHeight;
+
+  document.getElementById('outputBox').textContent = buildOutput(last);
+}
+
+/* ---------- Playback ---------- */
+function pauseAll(){
+  playing=false;
+  lectureMode=false;
+  waitingContinue=false;
+  continueRequested=false;
+
+  document.getElementById('btnPlay').textContent="▶ Play";
+  document.getElementById('btnAuto').textContent="🎓 Auto Demo";
+  document.getElementById('btnCont').disabled=true;
+
+  if(timerPlay){ clearTimeout(timerPlay); timerPlay=null; }
+}
+
+function playNormal(){
+  if(playing) return;
+  pauseAll();
+  playing=true;
+  document.getElementById('btnPlay').textContent="⏸ Pause";
+  tickNormal();
+}
+function tickNormal(){
+  if(!playing) return;
+  const sp=parseFloat(document.getElementById('speed').value);
+  const delay=Math.round(780/sp);
+  timerPlay=setTimeout(()=>{
+    if(idx < actions.length-1){
+      renderAction(idx+1);
+      tickNormal();
+    }else{
+      pauseAll();
+    }
+  }, delay);
+}
+
+function startAutoDemo(){
+  if(lectureMode) return;
+  pauseAll();
+  lectureMode=true;
+  document.getElementById('btnAuto').textContent="⏸ Stop Auto Demo";
+  tickAuto();
+}
+function tickAuto(){
+  if(!lectureMode) return;
+
+  if(waitingContinue && !continueRequested){
+    timerPlay=setTimeout(tickAuto, 80);
+    return;
+  }
+  if(continueRequested){
+    continueRequested=false;
+    waitingContinue=false;
+    document.getElementById('btnCont').disabled=true;
+  }
+
+  const sp=parseFloat(document.getElementById('speed').value);
+  const delay=Math.round(720/sp);
+
+  timerPlay=setTimeout(()=>{
+    if(idx >= actions.length-1){
+      pauseAll();
+      return;
+    }
+    const next=actions[idx+1];
+    renderAction(idx+1);
+
+    const pVisit=document.getElementById('pauseOnVisit').checked;
+    const pBack=document.getElementById('pauseOnBacktrack').checked;
+
+    if(next && ((pVisit && next.type==="visit") || (pBack && next.type==="backtrack"))){
+      waitingContinue=true;
+      document.getElementById('btnCont').disabled=false;
+      return;
+    }
+    tickAuto();
+  }, delay);
+}
+
+/* ---------- Run/reset ---------- */
+function runFromInput(){
+  pauseAll();
+  showErr("");
+  try{
+    const parsed=parseInput(document.getElementById('inputArea').value);
+    model = { ...parsed, pos: layoutCircle(parsed.n) };
+    drawGraph();
+    actions = dfsFullActions();
+    idx = 0;
+    renderAction(0);
+  }catch(err){
+    showErr(err.message || String(err));
+  }
+}
+function resetToStart(){
+  pauseAll();
+  if(actions.length) renderAction(0);
+}
+
+/* ---------- UI wiring ---------- */
+document.getElementById('speed').addEventListener('input', e=>{
+  document.getElementById('speedText').textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+});
+
+document.getElementById('btnRun').addEventListener('click', runFromInput);
+document.getElementById('btnLoadSample').addEventListener('click', ()=>{
+  document.getElementById('inputArea').value = SAMPLE;
+  runFromInput();
+});
+
+document.getElementById('dirDirected').addEventListener('change', runFromInput);
+document.getElementById('dirUndirected').addEventListener('change', runFromInput);
+document.getElementById('sortAdj').addEventListener('change', runFromInput);
+
+document.getElementById('targetNode').addEventListener('input', ()=>{
+  if(!actions.length) return;
+  renderAction(idx);
+});
+
+document.getElementById('btnStep').addEventListener('click', ()=>{
+  pauseAll();
+  if(idx < actions.length-1) renderAction(idx+1);
+});
+document.getElementById('btnReset').addEventListener('click', resetToStart);
+
+document.getElementById('btnPlay').addEventListener('click', ()=>{
+  if(playing){ pauseAll(); return; }
+  playNormal();
+});
+document.getElementById('btnAuto').addEventListener('click', ()=>{
+  if(lectureMode){ pauseAll(); return; }
+  startAutoDemo();
+});
+document.getElementById('btnCont').addEventListener('click', ()=>{
+  if(!lectureMode) return;
+  continueRequested=true;
+});
+
+/* init */
+runFromInput();
+</script>
+</body>
+</html>

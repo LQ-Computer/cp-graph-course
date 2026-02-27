@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Prim MST Interactive (Undirected)</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#101a33; --text:#e8ecff; --muted:#a9b3d6;
+      --accent:#7aa2ff; --good:#2ee59d; --warn:#ffcc66; --bad:#ff6b6b;
+      --edge:#9aa7d6; --edgeHi:#ffcc66; --edgeMST:#2ee59d;
+      --node:#1b2b57; --nodeBorder:#6f86ff;
+      --shadow:0 12px 30px rgba(0,0,0,.35); --radius:16px; --stroke:rgba(255,255,255,.08);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);color:var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, #172a63 0%, var(--bg) 55%) fixed;}
+    header{max-width:1300px;margin:0 auto;padding:20px 18px 10px}
+    h1{margin:0 0 6px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.4}
+
+    .layout{max-width:1300px;margin:0 auto;padding:12px 18px 22px;display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .card h2{margin:0;font-size:14px;padding:12px 14px;border-bottom:1px solid var(--stroke);background:rgba(0,0,0,.12);color:#dfe6ff}
+    .content{padding:12px 14px}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button{
+      cursor:pointer;border:1px solid rgba(255,255,255,.12);
+      background: rgba(122,162,255,.14); color:var(--text);
+      border-radius:12px;padding:8px 10px;font-weight:800;font-size:13px;
+      transition:transform .06s ease, background .2s ease; white-space:nowrap;
+    }
+    button:hover{background:rgba(122,162,255,.22)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.08)}
+    button.secondary:hover{background:rgba(255,255,255,.12)}
+    button.danger{background:rgba(255,107,107,.16)}
+    button.danger:hover{background:rgba(255,107,107,.22)}
+    button.good{background:rgba(46,229,157,.16)}
+    button.good:hover{background:rgba(46,229,157,.24)}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      font-size:12px;color:#dfe6ff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.18)}
+    .mono{font-family:var(--mono);font-size:12px}
+    input[type="number"]{
+      width:70px;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);color:var(--text);font-family:var(--mono);
+    }
+    input[type="checkbox"]{transform:translateY(1px)}
+    .speed{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+    input[type="range"]{width:170px}
+
+    textarea{
+      width:100%;min-height:175px;resize:vertical;padding:10px 12px;border-radius:12px;
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);
+      color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.45;outline:none;
+    }
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .box{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;
+      max-height:260px;overflow:auto;
+    }
+    pre{margin:0;padding:12px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid var(--stroke);
+      overflow:auto;max-height:360px;font-family:var(--mono);font-size:12px;line-height:1.45}
+    .err{color:var(--bad);font-size:12px;margin-top:8px;display:none}
+
+    .svgWrap{padding:12px 14px 14px}
+    svg{width:100%;height:auto;display:block;background:rgba(0,0,0,.10);border:1px solid var(--stroke);border-radius:14px}
+
+    .edge{stroke:var(--edge);stroke-width:3.5;opacity:.85;transition:stroke .2s,opacity .2s,stroke-width .2s}
+    .edge.highlight{stroke:var(--edgeHi);opacity:1}
+    .edge.mst{stroke:var(--edgeMST);opacity:1;stroke-width:7}
+    .wLabel{fill:#eef2ff;font-size:11px;font-family:var(--mono);opacity:.95}
+
+    .nodeCircle{fill:var(--node);stroke:var(--nodeBorder);stroke-width:3;transition:stroke .2s,filter .2s,opacity .2s}
+    .nodeCircle.inMST{stroke:var(--good);filter:drop-shadow(0 0 10px rgba(46,229,157,.18))}
+    .nodeCircle.active{stroke:var(--warn);filter:drop-shadow(0 0 10px rgba(255,204,102,.18))}
+    .nodeLabel{fill:#f2f5ff;font-weight:900;font-size:13px;font-family:var(--mono)}
+    .nodeMeta{fill:#cfd7ff;font-size:11px;font-family:var(--mono);opacity:.95}
+
+    table{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid var(--stroke);
+      background:rgba(0,0,0,.12);font-size:12px}
+    th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:left}
+    th{color:#cfd7ff;background:rgba(255,255,255,.05)}
+    tr:last-child td{border-bottom:none}
+
+    .formula{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;line-height:1.45;
+    }
+    .tagOk{color:var(--good);font-weight:900}
+    .tagSkip{color:var(--muted);font-weight:900}
+
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .grid2,.grid3{grid-template-columns:1fr}
+      .speed{margin-left:0;width:100%;justify-content:space-between}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Prim – Tìm cây khung nhỏ nhất (MST)</h1>
+  <div class="sub">
+    Prim (đồ thị vô hướng, liên thông): bắt đầu từ đỉnh <b>start</b>, mỗi bước chọn đỉnh chưa vào MST có <b>key nhỏ nhất</b>,
+    rồi relax các cạnh kề để cập nhật <b>key[v]</b> và <b>parent[v]</b>. Cạnh trong MST được tô <span style="color:var(--good);font-weight:900">xanh</span>.
+  </div>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <section class="card">
+    <h2>Hình động & trạng thái</h2>
+    <div class="svgWrap">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnPlay">▶ Play</button>
+        <button id="btnStep" class="secondary">⏭ Step</button>
+        <button id="btnReset" class="danger">↺ Reset</button>
+
+        <button id="btnAuto" class="good">🎓 Auto Demo</button>
+        <button id="btnCont" class="secondary" disabled>▶ Continue</button>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="pauseOnPick" checked />
+          Pause on Pick
+        </label>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="pickOnly" />
+          Chỉ chạy theo lần chọn đỉnh
+        </label>
+
+        <div class="speed">
+          <span>Tốc độ</span>
+          <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1.2" />
+          <span class="badge"><span class="dot"></span><span id="speedText">1.2x</span></span>
+        </div>
+      </div>
+
+      <svg id="svg" viewBox="0 0 900 520">
+        <g id="edges"></g>
+        <g id="weights"></g>
+        <g id="nodes"></g>
+      </svg>
+
+      <div class="row" style="margin-top:10px">
+        <span class="badge"><span class="dot"></span> picked=<b id="pickedLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:var(--warn);box-shadow:0 0 0 3px rgba(255,204,102,.18)"></span>
+          edge=<b id="edgeLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.12)"></span>
+          step <b id="stepIdx">0</b>/<b id="stepTotal">0</b></span>
+        <span class="badge"><span class="dot" style="background:var(--good);box-shadow:0 0 0 3px rgba(46,229,157,.18)"></span>
+          action <b id="actionLabel">—</b></span>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div class="formula" id="formulaBox"></div>
+
+      <div style="height:12px"></div>
+
+      <div class="grid2">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">key/parent/inMST</div>
+          <table id="stateTable">
+            <thead><tr><th>v</th><th>inMST</th><th>key</th><th>parent</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Log</div>
+          <div id="log" class="box"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="card">
+    <h2>Input/Output + C++ code</h2>
+    <div class="content">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnRun">⚙ Run</button>
+        <button id="btnLoadSample" class="secondary">📥 Load sample</button>
+
+        <span class="badge"><span class="dot"></span>
+          Format: <span class="mono">n m start</span> + m dòng <span class="mono">u v w</span> (vô hướng)
+        </span>
+
+        <label class="badge" style="gap:8px">
+          start
+          <input type="number" id="startNode" min="1" value="1" />
+        </label>
+      </div>
+
+      <textarea id="inputArea" spellcheck="false"></textarea>
+      <div id="err" class="err"></div>
+
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Output</div>
+          <div id="outputBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">C++ reference</div>
+          <pre id="cpp"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+document.getElementById('cpp').textContent =
+`// Prim MST (undirected, connected)
+#include <bits/stdc++.h>
+using namespace std;
+const long long INF = (1LL<<60);
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,m,s; cin>>n>>m>>s;
+  vector<vector<pair<int,int>>> adj(n+1);
+  for(int i=0;i<m;i++){
+    int u,v,w; cin>>u>>v>>w;
+    adj[u].push_back({v,w});
+    adj[v].push_back({u,w});
+  }
+
+  vector<long long> key(n+1, INF);
+  vector<int> parent(n+1, -1);
+  vector<bool> inMST(n+1,false);
+
+  key[s]=0;
+
+  for(int it=1; it<=n; it++){
+    int u=-1;
+    for(int v=1; v<=n; v++){
+      if(!inMST[v] && (u==-1 || key[v]<key[u])) u=v;
+    }
+    if(u==-1 || key[u]==INF) break; // disconnected
+    inMST[u]=true;
+
+    for(auto [to,w]: adj[u]){
+      if(!inMST[to] && w < key[to]){
+        key[to]=w;
+        parent[to]=u;
+      }
+    }
+  }
+}`;
+
+/* sample */
+const SAMPLE =
+`6 9 1
+1 2 4
+1 3 3
+2 3 1
+2 4 2
+3 4 4
+3 5 2
+4 5 3
+4 6 2
+5 6 3`;
+
+document.getElementById('inputArea').value = SAMPLE;
+
+const svgEdges=document.getElementById("edges");
+const svgWeights=document.getElementById("weights");
+const svgNodes=document.getElementById("nodes");
+
+const edgeKey=(u,v)=>`${u}-${v}`;
+const edgeId=(u,v)=>`e-${u}-${v}`;
+const nodeId=(u)=>`n-${u}`;
+
+let model=null; // {n,m,start, edges, pos, visEdges, adj}
+let actions=[];
+let idx=0;
+
+// pick-only indices
+let pickIdx=[];
+let pickPos=0;
+
+let playing=false;
+let timer=null;
+
+let lecture=false;
+let waiting=false;
+let cont=false;
+
+const INF=10**15;
+
+function showErr(msg){
+  const el=document.getElementById("err");
+  if(!msg){ el.style.display="none"; el.textContent=""; return; }
+  el.style.display="block"; el.textContent=msg;
+}
+function layoutCircle(n){
+  const cx=450, cy=260;
+  const R=Math.max(150, Math.min(235, 60*n));
+  const pos={};
+  for(let i=1;i<=n;i++){
+    const ang=(-Math.PI/2) + (2*Math.PI*(i-1)/n);
+    pos[i]=[cx+R*Math.cos(ang), cy+R*Math.sin(ang)];
+  }
+  return pos;
+}
+
+/* parse n m start + m lines u v w */
+function parseInput(txt){
+  const lines=txt.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>0 && !s.startsWith("#"));
+  if(!lines.length) throw new Error("Input rỗng.");
+  const first=lines[0].split(/\s+/).map(Number);
+  if(first.length<3 || first.some(Number.isNaN)) throw new Error("Dòng đầu: n m start");
+  const [n,m,start]=first;
+  if(n<=0||m<0) throw new Error("n>0, m>=0");
+  if(start<1||start>n) throw new Error("start trong [1..n]");
+  if(lines.length!==m+1) throw new Error(`Cần ${m} dòng cạnh, nhưng có ${lines.length-1}.`);
+
+  const edges=[];
+  for(let i=1;i<=m;i++){
+    const parts=lines[i].split(/\s+/).map(Number);
+    if(parts.length<3 || parts.some(Number.isNaN)) throw new Error(`Dòng ${i+1}: u v w`);
+    const [u,v,w]=parts;
+    if(u<1||u>n||v<1||v>n) throw new Error(`Dòng ${i+1}: u,v trong [1..n]`);
+    edges.push({u,v,w});
+  }
+  return {n,m,start,edges};
+}
+
+/* build adj + unique visual edges (undirected draw 1 edge per pair, min weight) */
+function buildGraph(){
+  const adj=Array.from({length:model.n+1},()=>[]);
+  const best=new Map(); // "min-max" => w
+  for(const {u,v,w} of model.edges){
+    adj[u].push({to:v,w});
+    adj[v].push({to:u,w});
+    const a=Math.min(u,v), b=Math.max(u,v);
+    const k=edgeKey(a,b);
+    if(!best.has(k) || w < best.get(k)) best.set(k,w);
+  }
+  const vis=[];
+  for(const [k,w] of best.entries()){
+    const [u,v]=k.split("-").map(Number);
+    vis.push({u,v,w});
+  }
+  model.adj=adj;
+  model.visEdges=vis;
+}
+
+function drawGraph(){
+  svgEdges.innerHTML=""; svgWeights.innerHTML=""; svgNodes.innerHTML="";
+  buildGraph();
+
+  for(const {u,v,w} of model.visEdges){
+    const [x1,y1]=model.pos[u], [x2,y2]=model.pos[v];
+    const r=22, dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy)||1;
+    const sx=x1+(dx/len)*r, sy=y1+(dy/len)*r;
+    const tx=x2-(dx/len)*r, ty=y2-(dy/len)*r;
+
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute("x1",sx); line.setAttribute("y1",sy);
+    line.setAttribute("x2",tx); line.setAttribute("y2",ty);
+    line.setAttribute("class","edge");
+    line.setAttribute("id",edgeId(u,v));
+    svgEdges.appendChild(line);
+
+    const mx=(sx+tx)/2, my=(sy+ty)/2;
+    const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x",mx); t.setAttribute("y",my-6);
+    t.setAttribute("text-anchor","middle");
+    t.setAttribute("class","wLabel");
+    t.textContent=w;
+    svgWeights.appendChild(t);
+  }
+
+  for(let u=1;u<=model.n;u++){
+    const [x,y]=model.pos[u];
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("id",nodeId(u));
+
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",22);
+    c.setAttribute("class","nodeCircle");
+    g.appendChild(c);
+
+    const L=document.createElementNS("http://www.w3.org/2000/svg","text");
+    L.setAttribute("x",x); L.setAttribute("y",y+4);
+    L.setAttribute("text-anchor","middle");
+    L.setAttribute("class","nodeLabel");
+    L.textContent=u;
+    g.appendChild(L);
+
+    const M=document.createElementNS("http://www.w3.org/2000/svg","text");
+    M.setAttribute("x",x); M.setAttribute("y",y+40);
+    M.setAttribute("text-anchor","middle");
+    M.setAttribute("class","nodeMeta");
+    M.setAttribute("id",`meta-${u}`);
+    M.textContent="key=∞";
+    g.appendChild(M);
+
+    svgNodes.appendChild(g);
+  }
+}
+
+function clearHighlights(){
+  for(const e of model.visEdges){
+    const el=document.getElementById(edgeId(e.u,e.v));
+    if(!el) continue;
+    el.classList.remove("highlight","mst");
+  }
+  for(let u=1;u<=model.n;u++){
+    const c=document.getElementById(nodeId(u)).querySelector("circle");
+    c.classList.remove("active","inMST");
+  }
+}
+
+function findDrawnEdge(u,v){
+  const a=Math.min(u,v), b=Math.max(u,v);
+  return document.getElementById(edgeId(a,b));
+}
+function formatVal(x){
+  if(x>=INF/2) return "∞";
+  return String(x);
+}
+
+/* actions */
+function primActions(){
+  const n=model.n, s=model.start;
+  const key=Array(n+1).fill(INF);
+  const parent=Array(n+1).fill(-1);
+  const inMST=Array(n+1).fill(false);
+
+  key[s]=0;
+
+  const acts=[];
+  const mstEdges=new Set(); // "a-b" with a<b
+
+  const snap=(type, extra={})=>{
+    acts.push({
+      type,
+      picked: extra.picked ?? -1,
+      u: extra.u ?? -1,
+      v: extra.v ?? -1,
+      w: extra.w ?? 0,
+      oldKey: extra.oldKey,
+      newKey: extra.newKey,
+      updated: extra.updated ?? false,
+      msg: extra.msg || type,
+      key: key.slice(),
+      parent: parent.slice(),
+      inMST: inMST.slice(),
+      mstEdges: new Set(mstEdges)
+    });
+  };
+
+  snap("init",{msg:`Init: start=${s}, key[start]=0`});
+
+  for(let it=1; it<=n; it++){
+    // pick u with min key among not in MST
+    let u=-1;
+    for(let v=1; v<=n; v++){
+      if(!inMST[v] && (u===-1 || key[v] < key[u])) u=v;
+    }
+    if(u===-1 || key[u]>=INF/2){
+      snap("stop",{msg:"Stop: graph disconnected or no reachable vertex."});
+      break;
+    }
+
+    inMST[u]=true;
+    snap("pick",{picked:u,u,msg:`Pick u=${u} into MST (key=${formatVal(key[u])})`});
+
+    // add edge (parent[u],u) to MST except root
+    if(parent[u]!==-1){
+      const a=Math.min(parent[u],u), b=Math.max(parent[u],u);
+      mstEdges.add(edgeKey(a,b));
+      snap("add_edge",{picked:u,u:parent[u],v:u,w:key[u],msg:`Add edge (${parent[u]} - ${u}) w=${key[u]} to MST`});
+    }
+
+    // relax neighbors
+    for(const e of model.adj[u]){
+      const v=e.to, w=e.w;
+      snap("check",{picked:u,u,v,w,oldKey:key[v],msg:`Check edge ${u}-${v} (w=${w})`});
+      if(!inMST[v] && w < key[v]){
+        const old=key[v];
+        key[v]=w;
+        parent[v]=u;
+        snap("relax",{picked:u,u,v,w,oldKey:old,newKey:w,updated:true,
+          msg:`Relax: key[${v}] = ${w}, parent[${v}] = ${u}`});
+      }
+    }
+  }
+
+  snap("done",{msg:"Done Prim."});
+  return acts;
+}
+
+function rebuildPickOnly(){
+  pickIdx=[];
+  for(let t=0;t<actions.length;t++){
+    if(actions[t].type==="pick" || actions[t].type==="init" || actions[t].type==="done"){
+      pickIdx.push(t);
+    }
+  }
+  if(pickIdx.length===0 || pickIdx[0]!==0) pickIdx.unshift(0);
+  let best=0;
+  for(let p=0;p<pickIdx.length;p++){
+    if(pickIdx[p] <= idx) best=p; else break;
+  }
+  pickPos=best;
+}
+
+function nextIndexStep(){
+  if(!document.getElementById("pickOnly").checked) return Math.min(actions.length-1, idx+1);
+  if(!pickIdx.length) rebuildPickOnly();
+  if(pickPos < pickIdx.length-1) pickPos++;
+  return pickIdx[pickPos];
+}
+
+/* render */
+function updateTable(a){
+  const tbody=document.querySelector("#stateTable tbody");
+  tbody.innerHTML="";
+  for(let v=1; v<=model.n; v++){
+    const tr=document.createElement("tr");
+    tr.innerHTML =
+      `<td>${v}</td><td>${a.inMST[v] ? "YES" : "NO"}</td><td>${formatVal(a.key[v])}</td><td>${a.parent[v]===-1?"—":a.parent[v]}</td>`;
+    tbody.appendChild(tr);
+
+    document.getElementById(`meta-${v}`).textContent = `key=${formatVal(a.key[v])}`;
+  }
+}
+
+function renderFormula(a){
+  const box=document.getElementById("formulaBox");
+  if(a.type==="pick"){
+    box.innerHTML =
+      `<b>PICK</b>\n`+
+      `Chọn đỉnh u chưa vào MST có <b>key nhỏ nhất</b>.\n`+
+      `u=${a.picked}, key[u]=${formatVal(a.key[a.picked])}\n`+
+      `<span class="tagOk">inMST[u]=true</span>`;
+    return;
+  }
+  if(a.type==="relax"){
+    box.innerHTML =
+      `<b>RELAX</b>\n`+
+      `Đang xét cạnh ${a.u}-${a.v} (w=${a.w})\n`+
+      `Nếu v chưa vào MST và w < key[v] thì cập nhật.\n`+
+      `key[${a.v}] : ${formatVal(a.oldKey)} → <b>${formatVal(a.newKey)}</b>\n`+
+      `parent[${a.v}] = ${a.u}`;
+    return;
+  }
+  if(a.type==="check"){
+    box.innerHTML =
+      `<b>CHECK</b>\n`+
+      `Cạnh ${a.u}-${a.v} (w=${a.w})\n`+
+      `So sánh w với key[v]=${formatVal(a.oldKey)}.`;
+    return;
+  }
+  if(a.type==="add_edge"){
+    box.innerHTML =
+      `<b>ADD EDGE</b>\n`+
+      `Thêm cạnh parent[u]-u vào MST.\n`+
+      `(${a.u} - ${a.v}) w=${a.w}`;
+    return;
+  }
+  box.innerHTML = `Prim: lặp n lần, mỗi lần pick đỉnh min-key và relax các cạnh kề.`;
+}
+
+function renderAction(i){
+  idx=Math.max(0, Math.min(i, actions.length-1));
+  const a=actions[idx];
+
+  document.getElementById("stepIdx").textContent=idx;
+  document.getElementById("stepTotal").textContent=Math.max(0, actions.length-1);
+  document.getElementById("actionLabel").textContent=a.type;
+  document.getElementById("pickedLabel").textContent = a.picked===-1 ? "—" : a.picked;
+  document.getElementById("edgeLabel").textContent = (a.u!==-1 && a.v!==-1) ? `${a.u}-${a.v} (w=${a.w})` : "—";
+
+  clearHighlights();
+
+  // draw MST edges
+  for(const k of a.mstEdges){
+    const [u,v]=k.split("-").map(Number);
+    const el=findDrawnEdge(u,v);
+    if(el) el.classList.add("mst");
+  }
+
+  // node states
+  for(let v=1; v<=model.n; v++){
+    const c=document.getElementById(nodeId(v)).querySelector("circle");
+    if(a.inMST[v]) c.classList.add("inMST");
+  }
+
+  // highlight current action edge/node
+  if(a.type==="check" || a.type==="relax"){
+    const el=findDrawnEdge(a.u,a.v);
+    if(el) el.classList.add("highlight");
+    document.getElementById(nodeId(a.u)).querySelector("circle").classList.add("active");
+    document.getElementById(nodeId(a.v)).querySelector("circle").classList.add("active");
+  }
+  if(a.type==="pick"){
+    document.getElementById(nodeId(a.picked)).querySelector("circle").classList.add("active");
+  }
+
+  renderFormula(a);
+  updateTable(a);
+
+  const log=document.getElementById("log");
+  log.textContent = actions.slice(0, idx+1).map((x,k)=>`${String(k).padStart(3,'0')}: ${x.msg}`).join("\n");
+  log.scrollTop=log.scrollHeight;
+
+  // output (final)
+  const last=actions[actions.length-1];
+  let total=0;
+  let ok=true;
+  for(let v=1; v<=model.n; v++){
+    if(v===model.start) continue;
+    if(last.parent[v]===-1){ ok=false; continue; }
+    total += last.key[v];
+  }
+  let out=`Prim MST\nstart=${model.start}\n`;
+  out += `connected: ${ok ? "YES" : "NO (disconnected)"}\n`;
+  out += `total weight (if connected): ${ok ? total : "—"}\n\n`;
+  out += `Edges in MST:\n`;
+  const edges=[];
+  for(let v=1; v<=model.n; v++){
+    if(v===model.start) continue;
+    if(last.parent[v]!==-1) edges.push(`${last.parent[v]} - ${v} (w=${last.key[v]})`);
+  }
+  out += edges.length ? edges.join("\n") : "(none)";
+  document.getElementById("outputBox").textContent=out;
+}
+
+/* playback */
+function pauseAll(){
+  playing=false; lecture=false; waiting=false; cont=false;
+  document.getElementById("btnPlay").textContent="▶ Play";
+  document.getElementById("btnAuto").textContent="🎓 Auto Demo";
+  document.getElementById("btnCont").disabled=true;
+  if(timer){ clearTimeout(timer); timer=null; }
+}
+
+function playNormal(){
+  if(playing) return;
+  pauseAll();
+  playing=true;
+  document.getElementById("btnPlay").textContent="⏸ Pause";
+  tickNormal();
+}
+function tickNormal(){
+  if(!playing) return;
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(620/sp);
+  timer=setTimeout(()=>{
+    const next=nextIndexStep();
+    if(next>idx){ renderAction(next); tickNormal(); }
+    else pauseAll();
+  }, delay);
+}
+
+function startAuto(){
+  if(lecture) return;
+  pauseAll();
+  lecture=true;
+  document.getElementById("btnAuto").textContent="⏸ Stop Auto Demo";
+  tickAuto();
+}
+function tickAuto(){
+  if(!lecture) return;
+
+  if(waiting && !cont){
+    timer=setTimeout(tickAuto, 80);
+    return;
+  }
+  if(cont){
+    cont=false; waiting=false;
+    document.getElementById("btnCont").disabled=true;
+  }
+
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(560/sp);
+
+  timer=setTimeout(()=>{
+    const next=nextIndexStep();
+    if(next<=idx){ pauseAll(); return; }
+
+    const nextAction=actions[next];
+    renderAction(next);
+
+    const pauseOnPick=document.getElementById("pauseOnPick").checked;
+    if(!document.getElementById("pickOnly").checked && nextAction && pauseOnPick && nextAction.type==="pick"){
+      waiting=true;
+      document.getElementById("btnCont").disabled=false;
+      return;
+    }
+    tickAuto();
+  }, delay);
+}
+
+/* run */
+function runFromInput(){
+  pauseAll();
+  showErr("");
+  try{
+    const parsed=parseInput(document.getElementById("inputArea").value);
+    const start=parseInt(document.getElementById("startNode").value,10);
+    if(!Number.isFinite(start)) throw new Error("start không hợp lệ.");
+    if(start<1||start>parsed.n) throw new Error("start trong [1..n].");
+
+    model={...parsed, start, pos:layoutCircle(parsed.n)};
+    drawGraph();
+    actions=primActions();
+    idx=0;
+    rebuildPickOnly();
+    renderAction(0);
+  }catch(e){
+    showErr(e.message || String(e));
+  }
+}
+function resetToStart(){
+  pauseAll();
+  if(actions.length){ idx=0; rebuildPickOnly(); renderAction(0); }
+}
+
+/* wiring */
+document.getElementById("speed").addEventListener("input", e=>{
+  document.getElementById("speedText").textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+});
+document.getElementById("btnRun").addEventListener("click", runFromInput);
+document.getElementById("btnLoadSample").addEventListener("click", ()=>{
+  document.getElementById("inputArea").value=SAMPLE;
+  document.getElementById("startNode").value=1;
+  runFromInput();
+});
+document.getElementById("startNode").addEventListener("input", runFromInput);
+
+document.getElementById("pickOnly").addEventListener("change", ()=>{
+  rebuildPickOnly();
+  if(document.getElementById("pickOnly").checked) renderAction(pickIdx[pickPos]);
+  else renderAction(idx);
+});
+
+document.getElementById("btnStep").addEventListener("click", ()=>{
+  pauseAll();
+  const next=nextIndexStep();
+  if(next>idx) renderAction(next);
+});
+document.getElementById("btnReset").addEventListener("click", resetToStart);
+
+document.getElementById("btnPlay").addEventListener("click", ()=>{
+  if(playing){ pauseAll(); return; }
+  playNormal();
+});
+document.getElementById("btnAuto").addEventListener("click", ()=>{
+  if(lecture){ pauseAll(); return; }
+  startAuto();
+});
+document.getElementById("btnCont").addEventListener("click", ()=>{
+  if(!lecture) return;
+  cont=true;
+});
+
+/* init */
+runFromInput();
+</script>
+</body>
+</html>

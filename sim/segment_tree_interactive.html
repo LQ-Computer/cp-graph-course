@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Segment Tree Interactive (Sum Query)</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#101a33; --text:#e8ecff; --muted:#a9b3d6;
+      --accent:#7aa2ff; --good:#2ee59d; --warn:#ffcc66; --bad:#ff6b6b;
+      --shadow:0 12px 30px rgba(0,0,0,.35); --radius:16px; --stroke:rgba(255,255,255,.08);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);color:var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, #172a63 0%, var(--bg) 55%) fixed;}
+    header{max-width:1350px;margin:0 auto;padding:20px 18px 10px}
+    h1{margin:0 0 6px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.4}
+
+    .layout{max-width:1350px;margin:0 auto;padding:12px 18px 22px;display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .card h2{margin:0;font-size:14px;padding:12px 14px;border-bottom:1px solid var(--stroke);background:rgba(0,0,0,.12);color:#dfe6ff}
+    .content{padding:12px 14px}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button{
+      cursor:pointer;border:1px solid rgba(255,255,255,.12);
+      background: rgba(122,162,255,.14); color:var(--text);
+      border-radius:12px;padding:8px 10px;font-weight:800;font-size:13px;
+      transition:transform .06s ease, background .2s ease; white-space:nowrap;
+    }
+    button:hover{background:rgba(122,162,255,.22)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.08)}
+    button.secondary:hover{background:rgba(255,255,255,.12)}
+    button.danger{background:rgba(255,107,107,.16)}
+    button.danger:hover{background:rgba(255,107,107,.22)}
+    button.good{background:rgba(46,229,157,.16)}
+    button.good:hover{background:rgba(46,229,157,.24)}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      font-size:12px;color:#dfe6ff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.18)}
+    .mono{font-family:var(--mono);font-size:12px}
+    input[type="number"]{
+      width:80px;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);color:var(--text);font-family:var(--mono);
+    }
+    input[type="checkbox"]{transform:translateY(1px)}
+    .speed{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+    input[type="range"]{width:170px}
+
+    textarea{
+      width:100%;min-height:165px;resize:vertical;padding:10px 12px;border-radius:12px;
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);
+      color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.45;outline:none;
+    }
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .box{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;
+      max-height:320px;overflow:auto;
+    }
+    pre{margin:0;padding:12px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid var(--stroke);
+      overflow:auto;max-height:380px;font-family:var(--mono);font-size:12px;line-height:1.45}
+    .err{color:var(--bad);font-size:12px;margin-top:8px;display:none}
+
+    .svgWrap{padding:12px 14px 14px}
+    svg{width:100%;height:auto;display:block;background:rgba(0,0,0,.10);border:1px solid var(--stroke);border-radius:14px}
+
+    .edge{stroke:rgba(154,167,214,.55);stroke-width:2.5}
+    .node{transition:filter .2s, opacity .2s}
+    .node circle{fill:rgba(27,43,87,.92);stroke:rgba(111,134,255,.9);stroke-width:3}
+    .node text{font-family:var(--mono);fill:#eef2ff}
+    .node .t1{font-size:12px;font-weight:900}
+    .node .t2{font-size:11px;fill:#cfd7ff}
+    .node.active circle{stroke:rgba(255,204,102,.95);filter:drop-shadow(0 0 10px rgba(255,204,102,.18))}
+    .node.hit circle{stroke:rgba(46,229,157,.95);filter:drop-shadow(0 0 10px rgba(46,229,157,.16))}
+    .node.off{opacity:.35}
+
+    .formula{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;line-height:1.45;
+    }
+    .tagOk{color:var(--good);font-weight:900}
+    .tagSkip{color:var(--muted);font-weight:900}
+    .tagNo{color:var(--bad);font-weight:900}
+
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .grid2,.grid3{grid-template-columns:1fr}
+      .speed{margin-left:0;width:100%;justify-content:space-between}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Segment Tree – Build / Query / Update (Sum)</h1>
+  <div class="sub">
+    Mỗi node lưu tổng đoạn <b>[l..r]</b>. Query cộng các node nằm hoàn toàn trong đoạn hỏi; Update cập nhật lá rồi đẩy tổng lên.
+  </div>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <section class="card">
+    <h2>Hình động & trạng thái</h2>
+    <div class="svgWrap">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnPlay">▶ Play</button>
+        <button id="btnStep" class="secondary">⏭ Step</button>
+        <button id="btnReset" class="danger">↺ Reset</button>
+
+        <button id="btnAuto" class="good">🎓 Auto Demo</button>
+        <button id="btnCont" class="secondary" disabled>▶ Continue</button>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="pauseOnHit" checked />
+          Pause on “hit”
+        </label>
+
+        <div class="speed">
+          <span>Tốc độ</span>
+          <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1.2" />
+          <span class="badge"><span class="dot"></span><span id="speedText">1.2x</span></span>
+        </div>
+      </div>
+
+      <div class="row" style="margin-bottom:10px">
+        <span class="badge"><span class="dot"></span> op=<b id="opLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:var(--warn);box-shadow:0 0 0 3px rgba(255,204,102,.18)"></span>
+          node=<b id="nodeLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.12)"></span>
+          step <b id="stepIdx">0</b>/<b id="stepTotal">0</b></span>
+        <span class="badge"><span class="dot" style="background:var(--good);box-shadow:0 0 0 3px rgba(46,229,157,.18)"></span>
+          action <b id="actionLabel">—</b></span>
+      </div>
+
+      <div class="formula" id="formulaBox"></div>
+
+      <div style="height:12px"></div>
+
+      <svg id="svg" viewBox="0 0 980 640">
+        <g id="edges"></g>
+        <g id="nodes"></g>
+      </svg>
+
+      <div style="height:12px"></div>
+
+      <div class="grid3">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Array (1-index)</div>
+          <div id="arrBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Log</div>
+          <div id="log" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Result</div>
+          <div id="resBox" class="box"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="card">
+    <h2>Input/Output + C++ code</h2>
+    <div class="content">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnRun">⚙ Run</button>
+        <button id="btnLoadSample" class="secondary">📥 Load sample</button>
+
+        <span class="badge"><span class="dot"></span>
+          Format: <span class="mono">n</span> + dòng mảng + <span class="mono">q</span> + q dòng (Q/U)
+        </span>
+      </div>
+
+      <textarea id="inputArea" spellcheck="false"></textarea>
+      <div id="err" class="err"></div>
+
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Output</div>
+          <div id="outputBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">C++ reference</div>
+          <pre id="cpp"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+document.getElementById('cpp').textContent =
+`// Segment Tree (sum) - build, query, update
+#include <bits/stdc++.h>
+using namespace std;
+
+struct SegTree{
+  int n;
+  vector<long long> st;
+  SegTree(int n=0): n(n), st(4*n+5,0) {}
+
+  void build(int p, int l, int r, const vector<long long>& a){
+    if(l==r){ st[p]=a[l]; return; }
+    int m=(l+r)/2;
+    build(p*2,l,m,a);
+    build(p*2+1,m+1,r,a);
+    st[p]=st[p*2]+st[p*2+1];
+  }
+
+  long long query(int p,int l,int r,int i,int j){
+    if(j<l || r<i) return 0;          // no overlap
+    if(i<=l && r<=j) return st[p];    // full cover
+    int m=(l+r)/2;
+    return query(p*2,l,m,i,j) + query(p*2+1,m+1,r,i,j);
+  }
+
+  void update(int p,int l,int r,int idx,long long val){
+    if(l==r){ st[p]=val; return; }
+    int m=(l+r)/2;
+    if(idx<=m) update(p*2,l,m,idx,val);
+    else update(p*2+1,m+1,r,idx,val);
+    st[p]=st[p*2]+st[p*2+1];
+  }
+};`;
+
+const SAMPLE =
+`8
+5 1 3 7 2 6 4 8
+6
+Q 2 6
+U 4 10
+Q 1 4
+Q 5 8
+U 2 9
+Q 1 3`;
+
+document.getElementById('inputArea').value = SAMPLE;
+
+const svg=document.getElementById("svg");
+const gEdges=document.getElementById("edges");
+const gNodes=document.getElementById("nodes");
+
+let model=null;  // {n, a[1..n], ops:[]}
+let tree=null;   // arrays: L,R,sum, left,right, id->pos
+let actions=[];
+let idx=0;
+
+let playing=false;
+let timer=null;
+
+let lecture=false;
+let waiting=false;
+let cont=false;
+
+function showErr(msg){
+  const el=document.getElementById("err");
+  if(!msg){ el.style.display="none"; el.textContent=""; return; }
+  el.style.display="block"; el.textContent=msg;
+}
+
+function parseInput(txt){
+  const lines=txt.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>0 && !s.startsWith("#"));
+  let p=0;
+  const n=parseInt(lines[p++],10);
+  if(!Number.isFinite(n) || n<=0) throw new Error("n phải > 0");
+  if(p>=lines.length) throw new Error("Thiếu dòng mảng.");
+  const arr=lines[p++].split(/\s+/).map(Number);
+  if(arr.length!==n || arr.some(x=>!Number.isFinite(x))) throw new Error("Dòng mảng phải có đúng n số.");
+  const a=[0,...arr];
+
+  if(p>=lines.length) throw new Error("Thiếu q.");
+  const q=parseInt(lines[p++],10);
+  if(!Number.isFinite(q) || q<0) throw new Error("q >= 0");
+  if(lines.length !== p+q) throw new Error(`Cần ${q} dòng thao tác, nhưng có ${lines.length-p}.`);
+
+  const ops=[];
+  for(let i=0;i<q;i++){
+    const parts=lines[p+i].split(/\s+/);
+    const type=parts[0];
+    if(type!=="Q" && type!=="U") throw new Error(`Op dòng ${p+i+1} phải là Q hoặc U.`);
+    if(type==="Q"){
+      if(parts.length<3) throw new Error("Q l r");
+      const l=parseInt(parts[1],10), r=parseInt(parts[2],10);
+      if(!(l>=1&&l<=n&&r>=1&&r<=n&&l<=r)) throw new Error("Q: 1<=l<=r<=n");
+      ops.push({type,l,r});
+    }else{
+      if(parts.length<3) throw new Error("U i val");
+      const iidx=parseInt(parts[1],10), val=Number(parts[2]);
+      if(!(iidx>=1&&iidx<=n) || !Number.isFinite(val)) throw new Error("U: 1<=i<=n, val số");
+      ops.push({type:"U", i:iidx, val});
+    }
+  }
+  return {n,a,ops};
+}
+
+/* Build explicit tree nodes for visualization */
+function buildTree(n){
+  // create nodes with id
+  const L=[], R=[], sum=[], left=[], right=[];
+  function rec(l,r){
+    const id=L.length;
+    L.push(l); R.push(r); sum.push(0);
+    left.push(-1); right.push(-1);
+    if(l!==r){
+      const m=Math.floor((l+r)/2);
+      left[id]=rec(l,m);
+      right[id]=rec(m+1,r);
+    }
+    return id;
+  }
+  const root=rec(1,n);
+
+  // layout positions by level
+  const levels=[];
+  function dfs(id, depth){
+    if(!levels[depth]) levels[depth]=[];
+    levels[depth].push(id);
+    if(left[id]!==-1) dfs(left[id], depth+1);
+    if(right[id]!==-1) dfs(right[id], depth+1);
+  }
+  dfs(root,0);
+
+  const pos={};
+  const W=980, H=640;
+  const topPad=55, bottomPad=40;
+  const levelH=(H-topPad-bottomPad)/Math.max(1,levels.length-1);
+
+  for(let d=0; d<levels.length; d++){
+    const ids=levels[d];
+    // spread evenly
+    for(let i=0;i<ids.length;i++){
+      const x = (W/(ids.length+1))*(i+1);
+      const y = topPad + d*levelH;
+      pos[ids[i]]=[x,y];
+    }
+  }
+
+  return {root,L,R,sum,left,right,pos};
+}
+
+function drawTree(){
+  gEdges.innerHTML=""; gNodes.innerHTML="";
+  if(!tree) return;
+
+  // edges
+  for(let id=0; id<tree.L.length; id++){
+    const [x1,y1]=tree.pos[id];
+    if(tree.left[id]!==-1){
+      const cid=tree.left[id]; const [x2,y2]=tree.pos[cid];
+      const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+      ln.setAttribute("x1",x1); ln.setAttribute("y1",y1);
+      ln.setAttribute("x2",x2); ln.setAttribute("y2",y2);
+      ln.setAttribute("class","edge");
+      gEdges.appendChild(ln);
+    }
+    if(tree.right[id]!==-1){
+      const cid=tree.right[id]; const [x2,y2]=tree.pos[cid];
+      const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+      ln.setAttribute("x1",x1); ln.setAttribute("y1",y1);
+      ln.setAttribute("x2",x2); ln.setAttribute("y2",y2);
+      ln.setAttribute("class","edge");
+      gEdges.appendChild(ln);
+    }
+  }
+
+  // nodes
+  for(let id=0; id<tree.L.length; id++){
+    const [x,y]=tree.pos[id];
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("class","node");
+    g.setAttribute("id",`node-${id}`);
+
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",x); c.setAttribute("cy",y);
+    c.setAttribute("r",22);
+    g.appendChild(c);
+
+    const t1=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t1.setAttribute("x",x); t1.setAttribute("y",y+4);
+    t1.setAttribute("text-anchor","middle");
+    t1.setAttribute("class","t1");
+    t1.textContent = tree.sum[id];
+    g.appendChild(t1);
+
+    const t2=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t2.setAttribute("x",x); t2.setAttribute("y",y+28);
+    t2.setAttribute("text-anchor","middle");
+    t2.setAttribute("class","t2");
+    t2.textContent = `[${tree.L[id]}..${tree.R[id]}]`;
+    g.appendChild(t2);
+
+    gNodes.appendChild(g);
+  }
+}
+
+function clearNodeClasses(){
+  for(let id=0; id<tree.L.length; id++){
+    const el=document.getElementById(`node-${id}`);
+    el.classList.remove("active","hit","off");
+  }
+}
+
+function updateNodeTexts(){
+  for(let id=0; id<tree.L.length; id++){
+    const el=document.getElementById(`node-${id}`);
+    if(!el) continue;
+    const t1=el.querySelector(".t1");
+    const t2=el.querySelector(".t2");
+    t1.textContent = tree.sum[id];
+    t2.textContent = `[${tree.L[id]}..${tree.R[id]}]`;
+  }
+}
+
+function arrText(){
+  const a=model.a;
+  let s="";
+  for(let i=1;i<=model.n;i++){
+    s += `${i}:${a[i]}${i===model.n?"":"  "}`;
+  }
+  return s;
+}
+
+/* Build actions for build+ops */
+function makeActions(){
+  const acts=[];
+  const n=model.n;
+
+  // local tree sum array
+  const sum=tree.sum;
+
+  function snap(type, extra={}){
+    acts.push({
+      type,
+      opIndex: extra.opIndex ?? -1,
+      opText: extra.opText ?? "",
+      node: extra.node ?? -1,
+      l: extra.l, r: extra.r, ql: extra.ql, qr: extra.qr,
+      idx: extra.idx, val: extra.val,
+      ret: extra.ret,
+      msg: extra.msg || type,
+      sum: sum.slice(),
+      a: model.a.slice()
+    });
+  }
+
+  function build(id){
+    const l=tree.L[id], r=tree.R[id];
+    snap("build_enter",{node:id,l,r,msg:`Build node [${l}..${r}]`});
+    if(l===r){
+      sum[id]=model.a[l];
+      snap("build_leaf",{node:id,l,r,msg:`Leaf: sum=${sum[id]} = a[${l}]`});
+      return sum[id];
+    }
+    const Lc=tree.left[id], Rc=tree.right[id];
+    const s1=build(Lc);
+    const s2=build(Rc);
+    sum[id]=s1+s2;
+    snap("build_pull",{node:id,l,r,msg:`Pull: sum=[${l}..${r}] = ${s1}+${s2} = ${sum[id]}`});
+    return sum[id];
+  }
+
+  function query(id, ql, qr, opIndex, opText){
+    const l=tree.L[id], r=tree.R[id];
+    snap("q_enter",{node:id,l,r,ql,qr,opIndex,opText,msg:`Query at node [${l}..${r}] for [${ql}..${qr}]`});
+
+    if(qr<l || r<ql){
+      snap("q_no",{node:id,l,r,ql,qr,opIndex,opText,ret:0,msg:`No overlap -> return 0`});
+      return 0;
+    }
+    if(ql<=l && r<=qr){
+      snap("q_hit",{node:id,l,r,ql,qr,opIndex,opText,ret:sum[id],msg:`Full cover -> take sum=${sum[id]}`});
+      return sum[id];
+    }
+    const s1=query(tree.left[id], ql, qr, opIndex, opText);
+    const s2=query(tree.right[id], ql, qr, opIndex, opText);
+    snap("q_merge",{node:id,l,r,ql,qr,opIndex,opText,ret:s1+s2,msg:`Merge -> ${s1}+${s2}=${s1+s2}`});
+    return s1+s2;
+  }
+
+  function update(id, idx, val, opIndex, opText){
+    const l=tree.L[id], r=tree.R[id];
+    snap("u_enter",{node:id,l,r,idx,val,opIndex,opText,msg:`Update idx=${idx} at node [${l}..${r}]`});
+    if(l===r){
+      model.a[idx]=val;
+      sum[id]=val;
+      snap("u_leaf",{node:id,l,r,idx,val,opIndex,opText,msg:`Leaf set: a[${idx}]=${val}, sum=${val}`});
+      return;
+    }
+    const m=Math.floor((l+r)/2);
+    if(idx<=m) update(tree.left[id], idx, val, opIndex, opText);
+    else update(tree.right[id], idx, val, opIndex, opText);
+    sum[id]=sum[tree.left[id]] + sum[tree.right[id]];
+    snap("u_pull",{node:id,l,r,idx,val,opIndex,opText,msg:`Pull: sum=[${l}..${r}] = ${sum[tree.left[id]]}+${sum[tree.right[id]]} = ${sum[id]}`});
+  }
+
+  // BUILD
+  snap("init",{msg:`Init: build segment tree for n=${n}`});
+  build(tree.root);
+  snap("built",{msg:"Build done."});
+
+  // OPS
+  let answers=[];
+  for(let i=0;i<model.ops.length;i++){
+    const op=model.ops[i];
+    if(op.type==="Q"){
+      const opText=`Q ${op.l} ${op.r}`;
+      snap("op_start",{opIndex:i,opText,msg:`Start ${opText}`});
+      const res=query(tree.root, op.l, op.r, i, opText);
+      answers.push(`${opText} => ${res}`);
+      snap("op_done",{opIndex:i,opText,ret:res,msg:`Done ${opText} => ${res}`});
+    }else{
+      const opText=`U ${op.i} ${op.val}`;
+      snap("op_start",{opIndex:i,opText,msg:`Start ${opText}`});
+      update(tree.root, op.i, op.val, i, opText);
+      snap("op_done",{opIndex:i,opText,msg:`Done ${opText}`});
+    }
+  }
+  snap("done",{msg:"All operations completed."});
+  return {acts, answers};
+}
+
+/* render formula */
+function renderFormula(a){
+  const box=document.getElementById("formulaBox");
+  if(a.type.startsWith("q_")){
+    if(a.type==="q_hit"){
+      box.innerHTML =
+        `<b>QUERY HIT</b>\nnode [${a.l}..${a.r}] ⊆ [${a.ql}..${a.qr}]\n`+
+        `<span class="tagOk">take sum=${a.ret}</span>`;
+      return;
+    }
+    if(a.type==="q_no"){
+      box.innerHTML =
+        `<b>QUERY NO OVERLAP</b>\nnode [${a.l}..${a.r}] ∩ [${a.ql}..${a.qr}] = ∅\n`+
+        `<span class="tagSkip">return 0</span>`;
+      return;
+    }
+    if(a.type==="q_merge"){
+      box.innerHTML =
+        `<b>QUERY MERGE</b>\ncombine left + right = ${a.ret}\n`+
+        `<span class="tagOk">return ${a.ret}</span>`;
+      return;
+    }
+    box.innerHTML =
+      `<b>QUERY</b>\nnode [${a.l}..${a.r}] vs query [${a.ql}..${a.qr}]`;
+    return;
+  }
+  if(a.type.startsWith("u_") || a.type==="u_enter"){
+    if(a.type==="u_leaf"){
+      box.innerHTML =
+        `<b>UPDATE LEAF</b>\nidx=${a.idx}, set value=${a.val}\n`+
+        `<span class="tagOk">sum leaf = ${a.val}</span>`;
+      return;
+    }
+    if(a.type==="u_pull"){
+      box.innerHTML =
+        `<b>UPDATE PULL</b>\nnode [${a.l}..${a.r}] = sum(left)+sum(right)\n`+
+        `<span class="tagOk">sum=${a.sum[a.node]}</span>`;
+      return;
+    }
+    box.innerHTML =
+      `<b>UPDATE</b>\nidx=${a.idx} in node [${a.l}..${a.r}]`;
+    return;
+  }
+  if(a.type.startsWith("build_")){
+    if(a.type==="build_leaf"){
+      box.innerHTML =
+        `<b>BUILD LEAF</b>\nnode [${a.l}..${a.r}] => sum=a[${a.l}]=${a.sum[a.node]}`;
+      return;
+    }
+    if(a.type==="build_pull"){
+      box.innerHTML =
+        `<b>BUILD PULL</b>\nnode [${a.l}..${a.r}] => sum(left)+sum(right) = ${a.sum[a.node]}`;
+      return;
+    }
+    box.innerHTML = `<b>BUILD</b>\nnode [${a.l}..${a.r}]`;
+    return;
+  }
+  box.innerHTML = `Build -> Query/Update theo từng bước.`;
+}
+
+function highlightNodes(a){
+  clearNodeClasses();
+
+  // mark off nodes if query no overlap for nicer view
+  if(a.type==="q_no"){
+    const el=document.getElementById(`node-${a.node}`);
+    if(el) el.classList.add("off");
+  }
+
+  if(a.node!==-1){
+    const el=document.getElementById(`node-${a.node}`);
+    if(el) el.classList.add("active");
+  }
+
+  // hit nodes
+  if(a.type==="q_hit"){
+    const el=document.getElementById(`node-${a.node}`);
+    if(el){
+      el.classList.remove("active");
+      el.classList.add("hit");
+    }
+  }
+}
+
+function renderAction(i){
+  idx=Math.max(0, Math.min(i, actions.length-1));
+  const a=actions[idx];
+
+  document.getElementById("stepIdx").textContent = idx;
+  document.getElementById("stepTotal").textContent = Math.max(0, actions.length-1);
+  document.getElementById("actionLabel").textContent = a.type;
+
+  document.getElementById("opLabel").textContent = a.opText ? a.opText : (a.type.startsWith("build") ? "BUILD" : "—");
+  document.getElementById("nodeLabel").textContent = a.node===-1 ? "—" : `[${tree.L[a.node]}..${tree.R[a.node]}]`;
+
+  // apply sums snapshot
+  tree.sum = a.sum.slice();
+  updateNodeTexts();
+  renderFormula(a);
+  highlightNodes(a);
+
+  document.getElementById("arrBox").textContent = a.a ? a.a.slice(1).map((v,i)=>`${i+1}:${v}`).join("  ") : arrText();
+
+  const log=document.getElementById("log");
+  log.textContent = actions.slice(0, idx+1).map((x,k)=>`${String(k).padStart(3,'0')}: ${x.msg}`).join("\n");
+  log.scrollTop = log.scrollHeight;
+
+  // result list
+  const resBox=document.getElementById("resBox");
+  const doneQueries = outputsSoFar();
+  resBox.textContent = doneQueries.length ? doneQueries.join("\n") : "(chưa có query)";
+
+  // final output
+  const out = buildFinalOutput();
+  document.getElementById("outputBox").textContent = out;
+
+  // pause in auto demo
+}
+
+function outputsSoFar(){
+  // accumulate op_done with ret for Q
+  const arr=[];
+  for(let k=0;k<=idx;k++){
+    const a=actions[k];
+    if(a.type==="op_done" && a.opText && a.opText.startsWith("Q") && typeof a.ret==="number"){
+      arr.push(`${a.opText} => ${a.ret}`);
+    }
+  }
+  return arr;
+}
+function buildFinalOutput(){
+  // show all query answers from end snapshot
+  const last=actions[actions.length-1];
+  const answers=[];
+  for(const a of actions){
+    if(a.type==="op_done" && a.opText && a.opText.startsWith("Q") && typeof a.ret==="number"){
+      answers.push(`${a.opText} => ${a.ret}`);
+    }
+  }
+  let out=`Segment Tree (sum)\n`;
+  out += `n=${model.n}\n`;
+  out += `queries answered: ${answers.length}\n\n`;
+  out += answers.length ? answers.join("\n") : "(no queries)";
+  return out;
+}
+
+/* playback */
+function pauseAll(){
+  playing=false; lecture=false; waiting=false; cont=false;
+  document.getElementById("btnPlay").textContent="▶ Play";
+  document.getElementById("btnAuto").textContent="🎓 Auto Demo";
+  document.getElementById("btnCont").disabled=true;
+  if(timer){ clearTimeout(timer); timer=null; }
+}
+function nextIndex(){
+  return Math.min(actions.length-1, idx+1);
+}
+function playNormal(){
+  if(playing) return;
+  pauseAll();
+  playing=true;
+  document.getElementById("btnPlay").textContent="⏸ Pause";
+  tickNormal();
+}
+function tickNormal(){
+  if(!playing) return;
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(620/sp);
+  timer=setTimeout(()=>{
+    const next=nextIndex();
+    if(next>idx){ renderAction(next); tickNormal(); }
+    else pauseAll();
+  }, delay);
+}
+function startAuto(){
+  if(lecture) return;
+  pauseAll();
+  lecture=true;
+  document.getElementById("btnAuto").textContent="⏸ Stop Auto Demo";
+  tickAuto();
+}
+function tickAuto(){
+  if(!lecture) return;
+
+  if(waiting && !cont){
+    timer=setTimeout(tickAuto, 80);
+    return;
+  }
+  if(cont){
+    cont=false; waiting=false;
+    document.getElementById("btnCont").disabled=true;
+  }
+
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(560/sp);
+
+  timer=setTimeout(()=>{
+    const next=nextIndex();
+    if(next<=idx){ pauseAll(); return; }
+    const nextAction=actions[next];
+    renderAction(next);
+
+    const pauseOnHit=document.getElementById("pauseOnHit").checked;
+    if(pauseOnHit && nextAction && nextAction.type==="q_hit"){
+      waiting=true;
+      document.getElementById("btnCont").disabled=false;
+      return;
+    }
+    tickAuto();
+  }, delay);
+}
+
+/* run */
+function runFromInput(){
+  pauseAll();
+  showErr("");
+  try{
+    model=parseInput(document.getElementById("inputArea").value);
+    tree=buildTree(model.n);
+    drawTree();
+    const res=makeActions();
+    actions=res.acts;
+    idx=0;
+    renderAction(0);
+  }catch(e){
+    showErr(e.message || String(e));
+  }
+}
+function resetToStart(){
+  pauseAll();
+  if(actions.length){ idx=0; renderAction(0); }
+}
+
+/* wiring */
+document.getElementById("speed").addEventListener("input", e=>{
+  document.getElementById("speedText").textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+});
+document.getElementById("btnRun").addEventListener("click", runFromInput);
+document.getElementById("btnLoadSample").addEventListener("click", ()=>{
+  document.getElementById("inputArea").value=SAMPLE;
+  runFromInput();
+});
+document.getElementById("btnStep").addEventListener("click", ()=>{
+  pauseAll();
+  const next=nextIndex();
+  if(next>idx) renderAction(next);
+});
+document.getElementById("btnReset").addEventListener("click", resetToStart);
+document.getElementById("btnPlay").addEventListener("click", ()=>{
+  if(playing){ pauseAll(); return; }
+  playNormal();
+});
+document.getElementById("btnAuto").addEventListener("click", ()=>{
+  if(lecture){ pauseAll(); return; }
+  startAuto();
+});
+document.getElementById("btnCont").addEventListener("click", ()=>{
+  if(!lecture) return;
+  cont=true;
+});
+
+/* init */
+runFromInput();
+</script>
+</body>
+</html>

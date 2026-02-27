@@ -1,0 +1,3097 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Đồ thị & Cây trong CP — Giảng bài (nền sáng) + Hình + Mô phỏng + C++</title>
+  <style>
+    :root{
+      --bg:#f7fafc;
+      --paper:#ffffff;
+      --card:#ffffff;
+      --text:#0b1220;
+      --muted:#334155;
+      --accent:#0ea5e9;    /* xanh dạy học */
+      --accent2:#7c3aed;   /* tím nhấn */
+      --good:#059669;
+      --warn:#d97706;
+      --bad:#dc2626;
+      --line:#cbd5e1;
+      --shadow: 0 10px 24px rgba(2,6,23,.10);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background: linear-gradient(180deg, #ffffff, var(--bg));
+      color:var(--text);
+      line-height:1.62;
+    }
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    header{
+      position:sticky; top:0; z-index:50;
+      background: rgba(255,255,255,.88);
+      border-bottom:1px solid var(--line);
+      backdrop-filter: blur(8px);
+    }
+    .wrap{max-width:1180px; margin:0 auto; padding:16px 18px}
+    .topbar{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+    .brand{display:flex; gap:10px; align-items:center}
+    .logo{
+      width:40px; height:40px; border-radius:12px; position:relative; overflow:hidden;
+      background: linear-gradient(135deg, rgba(14,165,233,.95), rgba(124,58,237,.95));
+      box-shadow: 0 10px 24px rgba(14,165,233,.20);
+    }
+    .logo::after{
+      content:""; position:absolute; inset:-40%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.70), transparent 40%);
+      transform: rotate(20deg); animation: shine 4s linear infinite;
+    }
+    @keyframes shine{
+      0%{transform:translateX(-10%) rotate(20deg)}
+      50%{transform:translateX(10%) rotate(20deg)}
+      100%{transform:translateX(-10%) rotate(20deg)}
+    }
+    .brand h1{font-size:16px; margin:0}
+    .brand p{margin:0; color:var(--muted); font-size:12px}
+
+    nav{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    nav a{
+      font-size:13px; color:var(--muted);
+      padding:8px 10px; border:1px solid var(--line);
+      border-radius:999px; background: #fff;
+    }
+    nav a:hover{
+      color:var(--text);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(14,165,233,.10);
+      text-decoration:none;
+    }
+
+    .grid{display:grid; grid-template-columns: 1.25fr .95fr; gap:16px; align-items:start}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+    .card{
+      background: var(--paper);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .card .hd{
+      padding:14px 16px; border-bottom:1px solid var(--line);
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    .card .hd h2{margin:0; font-size:14px}
+    .card .bd{padding:14px 16px}
+
+    .pill{
+      font-size:12px; color:var(--muted); white-space:nowrap;
+      border:1px solid var(--line);
+      border-radius:999px; padding:4px 10px; background: #fff;
+    }
+    .kpi{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    .kpi .tag{
+      font-size:12px; border:1px solid var(--line);
+      border-radius:999px; padding:6px 10px;
+      background: #fff; color:var(--muted);
+    }
+    .tag b{color:var(--text)}
+
+    .callout{
+      border-left:4px solid var(--accent);
+      background: rgba(14,165,233,.08);
+      padding:10px 12px; border-radius:12px;
+      color:var(--muted); margin:10px 0 0; font-size:13px;
+    }
+    .callout b{color:var(--text)}
+
+    .list{margin:8px 0 0; padding-left:18px; color:var(--muted)}
+    .list li{margin:6px 0}
+
+    button{
+      font-family: var(--sans);
+      font-size:13px;
+      color:var(--text);
+      background: #fff;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      transition: all .15s ease;
+    }
+    button:hover{
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(14,165,233,.12);
+      background: rgba(14,165,233,.06);
+    }
+    button:active{transform: translateY(1px)}
+    .btnrow{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+    /* SELECT style (light, high contrast) */
+    select{
+      font-family: var(--sans);
+      font-size:13px;
+      padding:8px 12px;
+      border-radius:12px;
+      border:1px solid #94a3b8;
+      background:#ffffff;
+      color:#0b1220;
+      cursor:pointer;
+      transition: all .15s ease;
+    }
+    select:hover{ border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,165,233,.12); }
+    select:focus{ outline:none; border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
+    select option{ background:#ffffff; color:#0b1220; padding:8px; }
+    select option:checked{ background:#e0f2fe; color:#075985; font-weight:700; }
+    select option:disabled{ color:#94a3b8; }
+
+    .small{font-size:12px; color:var(--muted)}
+
+    .mono{
+      font-family: var(--mono);
+      font-size: 12.8px;
+      background: #0b1220;
+      color:#f8fafc;
+      border:1px solid #0b1220;
+      border-radius:14px;
+      padding:12px;
+      overflow:auto;
+      white-space: pre;
+    }
+
+    .section{margin:14px 0 18px}
+    .section h3{margin:0 0 8px; font-size:14px}
+    .split{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    @media (max-width: 980px){ .split{grid-template-columns:1fr} }
+
+    /* SVG common */
+    .svgwrap{
+      background: #fff;
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      overflow:hidden;
+    }
+    svg{display:block; width:100%; height:auto}
+
+    .edge{stroke: rgba(2,6,23,.35); stroke-width:2.2}
+    .edge.dir{marker-end:url(#arrow)}
+    .edge.active{stroke: rgba(14,165,233,.95); stroke-width:3.2; filter: drop-shadow(0 0 6px rgba(14,165,233,.25))}
+    .edge.relax{stroke: rgba(5,150,105,.95); stroke-width:3.2}
+    .edge.bad{stroke: rgba(220,38,38,.95); stroke-width:3.2}
+    .node{fill: rgba(2,6,23,.03); stroke: rgba(2,6,23,.35); stroke-width:2}
+    .node.start{stroke: rgba(14,165,233,.95)}
+    .node.vis{fill: rgba(14,165,233,.14); stroke: rgba(14,165,233,.95)}
+    .node.done{fill: rgba(5,150,105,.14); stroke: rgba(5,150,105,.95)}
+    .node.cur{fill: rgba(124,58,237,.16); stroke: rgba(124,58,237,.95)}
+    .label{fill: rgba(2,6,23,.95); font-weight:800; font-size:14px}
+    .dist{fill: rgba(51,65,85,.95); font-size:12px}
+    .weight{fill: rgba(217,119,6,.95); font-size:12px; font-weight:800}
+
+    .legend{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      padding:10px 12px; border-top:1px solid var(--line);
+      color:var(--muted); font-size:12px;
+    }
+    .dot{width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:6px; vertical-align:middle}
+
+    /* grid (Loang) */
+    .gridbox{
+      display:grid; gap:10px;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (max-width: 980px){ .gridbox{grid-template-columns:1fr} }
+    .cellwrap{padding:12px}
+    .gridcells{
+      display:grid; grid-template-columns: repeat(10, 22px);
+      gap:4px; justify-content:start; align-content:start;
+      padding:10px; border:1px solid var(--line);
+      border-radius:14px; background: #fff;
+    }
+    .cell{
+      width:22px; height:22px; border-radius:6px;
+      border:1px solid var(--line);
+      background: rgba(2,6,23,.02);
+    }
+    .cell.oil{background: rgba(217,119,6,.20); border-color: rgba(217,119,6,.55)}
+    .cell.cur{background: rgba(124,58,237,.22); border-color: rgba(124,58,237,.70)}
+    .cell.vis{background: rgba(5,150,105,.18); border-color: rgba(5,150,105,.70)}
+
+    /* matrix (Floyd) */
+    table.matrix{
+      border-collapse: collapse;
+      width: 100%;
+      overflow:hidden;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background: #fff;
+    }
+    .matrix td, .matrix th{
+      border:1px solid var(--line);
+      padding:6px 8px;
+      text-align:center;
+      font-family: var(--mono);
+      font-size:12px;
+      color: var(--muted);
+    }
+    .matrix th{color:var(--text); background: rgba(2,6,23,.03)}
+    .matrix td.hi{background: rgba(14,165,233,.12); color: var(--text)}
+    .matrix td.upd{background: rgba(5,150,105,.12); color: var(--text)}
+
+    footer{padding:18px 0 28px; color: var(--muted); font-size:12px}
+
+    @media print{
+      header, nav, button, select, .btnrow{ display:none !important; }
+      body{ background:#fff !important; }
+      .card{ box-shadow:none !important; }
+      .mono{ white-space: pre-wrap; } /* tránh tràn trang */
+      a{ color:#000; text-decoration:underline; }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="wrap topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Đồ thị & Cây trong Lập trình Thi đấu</h1>
+        <p>Phiên bản giảng bài (nền sáng) — Hình minh hoạ + Mô phỏng step-by-step + Template C++</p>
+      </div>
+    </div>
+    <nav>
+      <a href="#khainiem">Khái niệm</a>
+      <a href="#sim">Mô phỏng</a>
+      <a href="#pitfalls">Bẫy + Test</a>
+      <a href="#shortest">Đường đi ngắn</a>
+      <a href="#mst">MST</a>
+      <a href="#grid">Loang</a>
+      <a href="#ds">Cấu trúc dữ liệu</a>
+      <a href="#adv">Nâng cao</a>
+      <a href="#cpp">C++ templates</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="section grid">
+    <div class="card">
+      <div class="hd">
+        <h2>🎯 Mục tiêu học</h2>
+        <span class="pill">đội tuyển HSG Tin</span>
+      </div>
+      <div class="bd">
+        <p style="margin:0;color:var(--muted)">
+          Lộ trình chuẩn: <b>khái niệm → nhận dạng đề → thuật toán → code → mô phỏng → test bẫy</b>.
+          Trang này thiết kế để vừa <b>chiếu trên lớp</b> vừa <b>in làm tài liệu</b>.
+        </p>
+        <div class="kpi">
+          <div class="tag"><b>Graph:</b> BFS/DFS, 0-1 BFS, Dijkstra, Bellman-Ford, Floyd</div>
+          <div class="tag"><b>MST:</b> Prim, Kruskal</div>
+          <div class="tag"><b>Chuyên sâu:</b> SCC, Cầu/Khớp, LCA</div>
+          <div class="tag"><b>Tree/DS:</b> Segment Tree, Fenwick, Trie</div>
+        </div>
+        <div class="callout">
+          <b>Mẹo chọn thuật toán:</b> “không trọng số?”→BFS, “w∈{0,1}?”→0-1 BFS,
+          “w≥0?”→Dijkstra, “có âm/chu trình âm?”→Bellman, “mọi cặp?”→Floyd,
+          “xây mạng tiết kiệm?”→MST, “mạnh liên thông?”→SCC, “cầu/khớp?”→tin/low.
+        </div>
+      </div>
+    </div>
+
+    <div class="card svgwrap" id="khainiem">
+      <div class="hd">
+        <h2>🖼️ Khái niệm đồ thị (có hình)</h2>
+        <span class="pill">vô hướng / có hướng / trọng số</span>
+      </div>
+      <svg viewBox="0 0 520 300" role="img" aria-label="Minh hoạ đồ thị vô hướng, có hướng, trọng số">
+        <defs>
+          <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+            <path d="M0,0 L12,6 L0,12 z" fill="rgba(2,6,23,.55)"></path>
+          </marker>
+        </defs>
+
+        <text x="40" y="28" class="label">Vô hướng</text>
+        <line x1="55" y1="65" x2="145" y2="110" class="edge"></line>
+        <line x1="55" y1="65" x2="145" y2="35" class="edge"></line>
+        <line x1="145" y1="35" x2="145" y2="110" class="edge"></line>
+        <circle cx="55" cy="65" r="18" class="node start"></circle>
+        <circle cx="145" cy="35" r="18" class="node"></circle>
+        <circle cx="145" cy="110" r="18" class="node"></circle>
+        <text x="55" y="70" text-anchor="middle" class="label">1</text>
+        <text x="145" y="40" text-anchor="middle" class="label">2</text>
+        <text x="145" y="115" text-anchor="middle" class="label">3</text>
+
+        <text x="225" y="28" class="label">Có hướng</text>
+        <line x1="230" y1="60" x2="320" y2="40" class="edge dir"></line>
+        <line x1="230" y1="60" x2="320" y2="115" class="edge dir"></line>
+        <line x1="320" y1="40" x2="320" y2="115" class="edge dir"></line>
+        <circle cx="230" cy="60" r="18" class="node start"></circle>
+        <circle cx="320" cy="40" r="18" class="node"></circle>
+        <circle cx="320" cy="115" r="18" class="node"></circle>
+        <text x="230" y="65" text-anchor="middle" class="label">A</text>
+        <text x="320" y="45" text-anchor="middle" class="label">B</text>
+        <text x="320" y="120" text-anchor="middle" class="label">C</text>
+
+        <text x="395" y="28" class="label">Trọng số</text>
+        <line x1="395" y1="60" x2="475" y2="40" class="edge"></line>
+        <line x1="395" y1="60" x2="475" y2="115" class="edge"></line>
+        <line x1="475" y1="40" x2="475" y2="115" class="edge"></line>
+        <text x="432" y="45" class="weight">5</text>
+        <text x="432" y="95" class="weight">2</text>
+        <text x="482" y="80" class="weight">7</text>
+        <circle cx="395" cy="60" r="18" class="node start"></circle>
+        <circle cx="475" cy="40" r="18" class="node"></circle>
+        <circle cx="475" cy="115" r="18" class="node"></circle>
+        <text x="395" y="65" text-anchor="middle" class="label">s</text>
+        <text x="475" y="45" text-anchor="middle" class="label">u</text>
+        <text x="475" y="120" text-anchor="middle" class="label">v</text>
+
+        <rect x="18" y="170" width="484" height="110" rx="14" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.10)"/>
+        <text x="32" y="196" class="dist">• Path: dãy cạnh nối 2 đỉnh; Cycle: path khép kín (đỉnh đầu = đỉnh cuối).</text>
+        <text x="32" y="216" class="dist">• Đồ thị có trọng số: độ dài đường đi = tổng w trên các cạnh.</text>
+        <text x="32" y="236" class="dist">• Tree (cây): liên thông, không chu trình, n đỉnh ⇒ n−1 cạnh.</text>
+        <text x="32" y="256" class="dist">• Chọn thuật toán theo loại trọng số (0/1/≥0/âm) và yêu cầu (1 nguồn / mọi cặp).</text>
+      </svg>
+      <div class="legend">
+        <span class="small">Gợi ý giảng: cho học sinh vẽ lại 3 loại đồ thị và tự nêu ví dụ đề bài tương ứng.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIMULATION -->
+  <section class="card section svgwrap" id="sim">
+    <div class="hd">
+      <h2>🎬 Mô phỏng step-by-step (cơ bản → nâng cao)</h2>
+      <div class="btnrow">
+        <select id="modeSelect" aria-label="Chọn mô phỏng">
+          <option value="bfs">BFS (Queue)</option>
+          <option value="dfs">DFS (Stack)</option>
+          <option value="zobfs">0-1 BFS (Deque)</option>
+          <option value="dijkstra">Dijkstra (w ≥ 0)</option>
+          <option value="bellman">Bellman-Ford (có âm)</option>
+          <option value="prim">Prim (MST)</option>
+          <option value="kruskal">Kruskal (MST)</option>
+          <option value="scc">SCC (Kosaraju)</option>
+          <option value="bridge">Cầu (tin/low)</option>
+          <option value="lca">LCA (demo cơ chế)</option>
+        </select>
+        <button id="playBtn">▶ Chạy</button>
+        <button id="stepBtn">⏭ Bước</button>
+        <button id="resetBtn">↺ Reset</button>
+        <span class="pill" id="modePill">BFS</span>
+      </div>
+    </div>
+
+    <svg viewBox="0 0 520 340" role="img" aria-label="Mô phỏng thuật toán trên đồ thị">
+      <defs>
+        <marker id="arrowA" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+          <path d="M0,0 L12,6 L0,12 z" fill="rgba(2,6,23,.55)"></path>
+        </marker>
+        <marker id="arrowActive" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+          <path d="M0,0 L12,6 L0,12 z" fill="rgba(14,165,233,.95)"></path>
+        </marker>
+        <marker id="arrowBad" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+          <path d="M0,0 L12,6 L0,12 z" fill="rgba(220,38,38,.95)"></path>
+        </marker>
+      </defs>
+
+      <g id="edges"></g>
+      <g id="nodes"></g>
+
+      <g>
+        <rect x="14" y="14" width="492" height="62" rx="14" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.10)"/>
+        <text x="28" y="40" class="label" id="statusTitle">BFS — mô phỏng</text>
+        <text x="28" y="62" class="dist" id="statusLine">Nhấn ▶ để chạy, ⏭ để đi từng bước.</text>
+      </g>
+    </svg>
+
+    <div class="legend">
+      <span><span class="dot" style="background:rgba(14,165,233,.95)"></span>visited / relax</span>
+      <span><span class="dot" style="background:rgba(124,58,237,.95)"></span>current</span>
+      <span><span class="dot" style="background:rgba(5,150,105,.95)"></span>done / in MST</span>
+      <span><span class="dot" style="background:rgba(220,38,38,.95)"></span>cạnh âm / cầu</span>
+      <span class="small" id="hintLine">BFS: đường đi ngắn theo số cạnh (unweighted).</span>
+    </div>
+  </section>
+
+  <!-- PITFALLS + TESTS -->
+  <section class="card section" id="pitfalls">
+    <div class="hd">
+      <h2>⚠️ Bẫy thường gặp & Test mẫu (checklist trước khi nộp)</h2>
+      <span class="pill">rất hay ra đề</span>
+    </div>
+    <div class="bd split">
+      <div>
+        <h3>BFS / DFS</h3>
+        <ul class="list">
+          <li><b>Bẫy:</b> quên reset visited giữa nhiều test; nhầm 0-index/1-index; đồ thị vô hướng nhưng chỉ add 1 chiều.</li>
+          <li><b>Bẫy:</b> DFS đệ quy sâu → stack overflow (n lớn) ⇒ dùng DFS iterative nếu cần.</li>
+          <li><b>Test BFS:</b> đường đi ngắn theo số cạnh.</li>
+        </ul>
+        <div class="mono"># Input
+5 4
+1 2
+2 3
+3 4
+4 5
+1 5
+# Expected: dist=4, path 1 2 3 4 5</div>
+
+        <h3 style="margin-top:14px">0-1 BFS</h3>
+        <ul class="list">
+          <li><b>Bẫy:</b> chỉ dùng khi w ∈ {0,1}. Nếu w khác → dùng Dijkstra/Bellman.</li>
+          <li><b>Bẫy:</b> deque: w=0 push_front, w=1 push_back (đảo là sai).</li>
+        </ul>
+        <div class="mono"># Input
+4 4
+1 2 0
+2 3 1
+1 3 1
+3 4 0
+1 4
+# Expected: dist=1 (1->2->3->4)</div>
+
+        <h3 style="margin-top:14px">Dijkstra</h3>
+        <ul class="list">
+          <li><b>Bẫy chí mạng:</b> có cạnh âm ⇒ Dijkstra <b>sai</b>.</li>
+          <li><b>Bẫy:</b> quên bỏ bản ghi cũ trong pq (if d != dist[u] continue) ⇒ TLE.</li>
+        </ul>
+        <div class="mono"># Input (có cạnh âm)
+3 3
+1 2 2
+2 3 -5
+1 3 1
+1 3
+# Expected: shortest = -3 via 1->2->3 (Dijkstra sẽ chọn 1)</div>
+      </div>
+
+      <div>
+        <h3>Bellman-Ford</h3>
+        <ul class="list">
+          <li><b>Bẫy:</b> phát hiện chu trình âm bằng relax vòng n là chưa đủ; cần <b>lan truyền</b> ảnh hưởng chu trình âm theo cạnh để đánh dấu -2.</li>
+          <li><b>Bẫy:</b> chỉ chu trình âm <b>reachable từ s</b> mới ảnh hưởng kết quả từ s.</li>
+        </ul>
+        <div class="mono"># Input (chu trình âm reachable)
+4 4 1
+1 2 1
+2 3 1
+3 2 -3
+3 4 1
+# Expected: 2,3,4 bị -2 (do cycle ảnh hưởng)</div>
+
+        <h3 style="margin-top:14px">Floyd-Warshall</h3>
+        <ul class="list">
+          <li><b>Bẫy:</b> INF quá nhỏ → sai/tràn. Dùng long long + INF rất lớn.</li>
+          <li><b>Bẫy:</b> nếu d[i][k] hoặc d[k][j] là INF thì không được cộng.</li>
+          <li><b>Bẫy đề:</b> ma trận có thể dùng 0 để chỉ “không có cạnh” (trừ i=j) ⇒ phải đổi sang INF.</li>
+        </ul>
+        <div class="mono"># Input (0 nghĩa không có cạnh, trừ đường chéo)
+4
+0 3 0 7
+8 0 2 0
+5 0 0 1
+2 0 0 0
+# Expected: phải chuyển 0 (i!=j) thành INF rồi Floyd</div>
+
+        <h3 style="margin-top:14px">MST (Prim/Kruskal)</h3>
+        <ul class="list">
+          <li><b>Bẫy:</b> đồ thị không liên thông ⇒ không có MST (chỉ có MSF).</li>
+          <li><b>Bẫy Kruskal:</b> DSU unite sai ⇒ chọn cạnh tạo chu trình.</li>
+        </ul>
+        <div class="mono"># Input (không liên thông)
+4 2
+1 2 1
+3 4 1
+# Expected: Graph not connected</div>
+
+        <h3 style="margin-top:14px">SCC / Cầu-Khớp / LCA</h3>
+        <ul class="list">
+          <li><b>SCC:</b> quên reverse graph hoặc quên reverse order.</li>
+          <li><b>Cầu/Khớp:</b> phải DFS từ mọi đỉnh (đồ thị có thể không liên thông). Root là khớp khi có ≥2 con DFS.</li>
+          <li><b>LCA:</b> preprocess depth + up[k][v]. Nhầm LOG hoặc root.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Shortest path section -->
+  <section class="card section" id="shortest">
+    <div class="hd">
+      <h2>🧭 Đường đi ngắn — nhận dạng đề + thuật toán</h2>
+      <span class="pill">BFS / 0-1 BFS / Dijkstra / Bellman / Floyd</span>
+    </div>
+    <div class="bd split">
+      <div>
+        <h3>Nhận dạng nhanh</h3>
+        <ul class="list">
+          <li><b>Không trọng số</b> (mọi cạnh = 1) → <b>BFS</b> (queue).</li>
+          <li><b>Trọng số chỉ 0/1</b> → <b>0-1 BFS</b> (deque).</li>
+          <li><b>Trọng số không âm</b> → <b>Dijkstra</b> (priority_queue).</li>
+          <li><b>Có cạnh âm</b> hoặc hỏi <b>chu trình âm</b> → <b>Bellman-Ford</b>.</li>
+          <li><b>Mọi cặp (all-pairs)</b>, n nhỏ → <b>Floyd-Warshall</b>.</li>
+        </ul>
+        <div class="callout">
+          <b>Mẹo ra đề:</b> nếu bài cố tình có cạnh âm mà bạn dùng Dijkstra → 100% sai.
+          Nếu bài hỏi “ảnh hưởng chu trình âm” → cần lan truyền đánh dấu.
+        </div>
+      </div>
+      <div>
+        <h3>Hình minh hoạ “độ dài đường đi”</h3>
+        <div class="svgwrap">
+          <svg viewBox="0 0 520 220" role="img" aria-label="Minh hoạ đường đi và đường đi ngắn nhất">
+            <defs>
+              <marker id="arr2" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+                <path d="M0,0 L12,6 L0,12 z" fill="rgba(2,6,23,.55)"></path>
+              </marker>
+            </defs>
+            <line x1="90" y1="60" x2="220" y2="40" class="edge" marker-end="url(#arr2)"></line>
+            <line x1="220" y1="40" x2="360" y2="60" class="edge" marker-end="url(#arr2)"></line>
+            <line x1="90" y1="60" x2="220" y2="150" class="edge" marker-end="url(#arr2)"></line>
+            <line x1="220" y1="150" x2="360" y2="60" class="edge" marker-end="url(#arr2)"></line>
+
+            <text x="155" y="48" class="weight">5</text>
+            <text x="290" y="48" class="weight">4</text>
+            <text x="150" y="140" class="weight">2</text>
+            <text x="290" y="118" class="weight">3</text>
+
+            <circle cx="90" cy="60" r="18" class="node start"></circle>
+            <circle cx="220" cy="40" r="18" class="node"></circle>
+            <circle cx="220" cy="150" r="18" class="node"></circle>
+            <circle cx="360" cy="60" r="18" class="node"></circle>
+
+            <text x="90" y="65" text-anchor="middle" class="label">s</text>
+            <text x="220" y="45" text-anchor="middle" class="label">a</text>
+            <text x="220" y="155" text-anchor="middle" class="label">b</text>
+            <text x="360" y="65" text-anchor="middle" class="label">t</text>
+
+            <rect x="20" y="170" width="480" height="38" rx="12" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.10)"/>
+            <text x="34" y="194" class="dist">Đường s→a→t: 5+4=9; đường s→b→t: 2+3=5 ⇒ ngắn nhất là 5.</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Floyd demo -->
+  <section class="card section">
+    <div class="hd">
+      <h2>🧮 Floyd-Warshall — mô phỏng ma trận (cơ bản)</h2>
+      <span class="pill">all-pairs shortest path</span>
+    </div>
+    <div class="bd gridbox">
+      <div>
+        <p style="margin:0;color:var(--muted)">
+          Floyd: thử chèn đỉnh trung gian <b>k</b> vào giữa (i, j):
+          nếu <span style="font-family:var(--mono)">d[i][j] &gt; d[i][k] + d[k][j]</span> thì cập nhật.
+        </p>
+        <div class="callout">
+          <b>Gợi ý dạy:</b> cho học sinh tự tính tay 1–2 bước cập nhật để hiểu “chèn k” là gì.
+        </div>
+      </div>
+      <div>
+        <table class="matrix" id="floydTable" aria-label="Bảng Floyd demo"></table>
+        <div class="btnrow" style="margin-top:10px">
+          <button id="floydStep">⏭ Floyd: 1 bước</button>
+          <button id="floydReset">↺ Reset Floyd</button>
+          <span class="small" id="floydInfo">k=1, i=1, j=1</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MST section -->
+  <section class="card section" id="mst">
+    <div class="hd">
+      <h2>🌳 MST (Cây khung nhỏ nhất)</h2>
+      <span class="pill">Prim / Kruskal</span>
+    </div>
+    <div class="bd split">
+      <div>
+        <h3>Nhận dạng đề</h3>
+        <ul class="list">
+          <li><b>MST</b>: cây khung có tổng trọng số nhỏ nhất.</li>
+          <li><b>Đề hay gặp</b>: “xây đường / kéo dây / kết nối mạng / tiết kiệm chi phí”.</li>
+          <li><b>Prim</b>: giống “Dijkstra trên cây MST”: luôn chọn cạnh rẻ nhất nối vào tập đã chọn.</li>
+          <li><b>Kruskal</b>: sort cạnh tăng dần + DSU để tránh chu trình.</li>
+        </ul>
+        <div class="callout"><b>Bẫy:</b> nếu đồ thị không liên thông, in “Graph not connected” hoặc xử lý theo đề (MSF).</div>
+      </div>
+      <div class="svgwrap">
+        <svg viewBox="0 0 520 230" role="img" aria-label="Minh hoạ MST">
+          <text x="20" y="28" class="label">MST: chọn cạnh “rẻ” nhưng không tạo chu trình</text>
+          <line x1="90" y1="70" x2="220" y2="50" class="edge"></line>
+          <line x1="220" y1="50" x2="350" y2="70" class="edge"></line>
+          <line x1="90" y1="70" x2="220" y2="170" class="edge"></line>
+          <line x1="220" y1="170" x2="350" y2="70" class="edge"></line>
+          <line x1="220" y1="50" x2="220" y2="170" class="edge"></line>
+
+          <text x="150" y="58" class="weight">2</text>
+          <text x="285" y="58" class="weight">4</text>
+          <text x="140" y="160" class="weight">3</text>
+          <text x="285" y="128" class="weight">1</text>
+          <text x="232" y="118" class="weight">6</text>
+
+          <circle cx="90" cy="70" r="18" class="node start"></circle>
+          <circle cx="220" cy="50" r="18" class="node"></circle>
+          <circle cx="350" cy="70" r="18" class="node"></circle>
+          <circle cx="220" cy="170" r="18" class="node"></circle>
+
+          <text x="90" y="75" text-anchor="middle" class="label">1</text>
+          <text x="220" y="55" text-anchor="middle" class="label">2</text>
+          <text x="350" y="75" text-anchor="middle" class="label">3</text>
+          <text x="220" y="175" text-anchor="middle" class="label">4</text>
+
+          <line x1="90" y1="70" x2="220" y2="50" class="edge relax"></line>
+          <line x1="220" y1="170" x2="350" y2="70" class="edge relax"></line>
+          <line x1="90" y1="70" x2="220" y2="170" class="edge relax"></line>
+
+          <rect x="18" y="190" width="484" height="28" rx="12" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.10)"/>
+          <text x="32" y="210" class="dist">Ví dụ chọn các cạnh w=1,2,3 (tổng=6), tránh cạnh w=6 vì tạo chu trình.</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grid flood fill -->
+  <section class="card section" id="grid">
+    <div class="hd">
+      <h2>🟨 Loang (Flood fill) — BFS trên lưới</h2>
+      <span class="pill">đếm vùng 1</span>
+    </div>
+    <div class="bd gridbox">
+      <div>
+        <p style="margin:0;color:var(--muted)">
+          Loang là BFS/DFS trên ma trận: mỗi ô là một đỉnh, 4 hướng (hoặc 8 hướng) là cạnh.
+          “Đếm đảo / đếm vết dầu” = đếm thành phần liên thông của các ô 1.
+        </p>
+        <div class="btnrow" style="margin-top:10px">
+          <button id="loangPlay">▶ Chạy loang</button>
+          <button id="loangStep">⏭ 1 bước</button>
+          <button id="loangReset">↺ Reset</button>
+          <span class="small" id="loangInfo">Tìm ô 1 đầu tiên rồi BFS lan ra.</span>
+        </div>
+        <div class="callout">
+          <b>Bẫy:</b> nhầm 4 hướng/8 hướng; quên kiểm tra biên; quên reset visited.
+        </div>
+      </div>
+      <div class="cellwrap">
+        <div class="gridcells" id="loangGrid" aria-label="Grid loang 0/1"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Data structures -->
+  <section class="card section" id="ds">
+    <div class="hd">
+      <h2>🧰 Cấu trúc dữ liệu dạng cây (có hình)</h2>
+      <span class="pill">Segment / Fenwick / Trie</span>
+    </div>
+    <div class="bd split">
+      <div class="svgwrap">
+        <div class="hd" style="border-bottom:none">
+          <h2 style="font-size:13px;margin:0">Segment Tree (min/sum trên đoạn)</h2>
+          <span class="pill">chia để trị</span>
+        </div>
+        <svg viewBox="0 0 520 230" role="img" aria-label="Minh hoạ Segment Tree">
+          <text x="18" y="28" class="label">Mỗi node quản lý một đoạn [l..r]</text>
+          <rect x="210" y="45" width="100" height="30" rx="10" fill="rgba(14,165,233,.10)" stroke="rgba(14,165,233,.35)"/>
+          <text x="260" y="66" text-anchor="middle" class="dist">[1..8]</text>
+
+          <rect x="120" y="95" width="100" height="30" rx="10" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.15)"/>
+          <rect x="300" y="95" width="100" height="30" rx="10" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.15)"/>
+          <text x="170" y="116" text-anchor="middle" class="dist">[1..4]</text>
+          <text x="350" y="116" text-anchor="middle" class="dist">[5..8]</text>
+
+          <line x1="240" y1="75" x2="170" y2="95" class="edge"></line>
+          <line x1="280" y1="75" x2="350" y2="95" class="edge"></line>
+
+          <rect x="60" y="145" width="90" height="28" rx="10" fill="rgba(2,6,23,.02)" stroke="rgba(2,6,23,.12)"/>
+          <rect x="160" y="145" width="90" height="28" rx="10" fill="rgba(2,6,23,.02)" stroke="rgba(2,6,23,.12)"/>
+          <rect x="270" y="145" width="90" height="28" rx="10" fill="rgba(2,6,23,.02)" stroke="rgba(2,6,23,.12)"/>
+          <rect x="370" y="145" width="90" height="28" rx="10" fill="rgba(2,6,23,.02)" stroke="rgba(2,6,23,.12)"/>
+          <text x="105" y="164" text-anchor="middle" class="dist">[1..2]</text>
+          <text x="205" y="164" text-anchor="middle" class="dist">[3..4]</text>
+          <text x="315" y="164" text-anchor="middle" class="dist">[5..6]</text>
+          <text x="415" y="164" text-anchor="middle" class="dist">[7..8]</text>
+
+          <line x1="140" y1="125" x2="105" y2="145" class="edge"></line>
+          <line x1="200" y1="125" x2="205" y2="145" class="edge"></line>
+          <line x1="330" y1="125" x2="315" y2="145" class="edge"></line>
+          <line x1="370" y1="125" x2="415" y2="145" class="edge"></line>
+
+          <rect x="18" y="185" width="484" height="34" rx="12" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.10)"/>
+          <text x="32" y="207" class="dist">Query/Update mất O(log n) vì đi theo chiều cao cây.</text>
+        </svg>
+      </div>
+
+      <div>
+        <div class="svgwrap" style="margin-bottom:12px">
+          <div class="hd" style="border-bottom:none">
+            <h2 style="font-size:13px;margin:0">Fenwick Tree (BIT)</h2>
+            <span class="pill">prefix sum</span>
+          </div>
+          <svg viewBox="0 0 520 160" role="img" aria-label="Minh hoạ Fenwick Tree">
+            <text x="18" y="26" class="label">BIT: nhảy theo lowbit(i)=i&(-i)</text>
+            <rect x="18" y="40" width="484" height="90" rx="14" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.10)"/>
+            <text x="32" y="70" class="dist">Update(i): i += lowbit(i) ...</text>
+            <text x="32" y="94" class="dist">Query(i):  i -= lowbit(i) ...</text>
+            <text x="32" y="118" class="dist">Cập nhật & truy vấn đều O(log n). (1-index)</text>
+          </svg>
+        </div>
+
+        <div class="svgwrap">
+          <div class="hd" style="border-bottom:none">
+            <h2 style="font-size:13px;margin:0">Trie (xâu tiền tố)</h2>
+            <span class="pill">string prefix</span>
+          </div>
+          <svg viewBox="0 0 520 210" role="img" aria-label="Minh hoạ Trie">
+            <text x="18" y="26" class="label">Mỗi cạnh là 1 ký tự; đường đi là 1 xâu</text>
+            <circle cx="80" cy="90" r="16" class="node start"></circle>
+            <text x="80" y="95" text-anchor="middle" class="label">root</text>
+
+            <line x1="96" y1="85" x2="180" y2="60" class="edge"></line>
+            <line x1="96" y1="95" x2="180" y2="120" class="edge"></line>
+
+            <circle cx="180" cy="60" r="16" class="node"></circle>
+            <circle cx="180" cy="120" r="16" class="node"></circle>
+            <text x="180" y="65" text-anchor="middle" class="label">a</text>
+            <text x="180" y="125" text-anchor="middle" class="label">b</text>
+
+            <line x1="196" y1="56" x2="290" y2="40" class="edge"></line>
+            <circle cx="290" cy="40" r="16" class="node"></circle>
+            <text x="290" y="45" text-anchor="middle" class="label">d</text>
+
+            <line x1="306" y1="40" x2="410" y2="60" class="edge"></line>
+            <circle cx="410" cy="60" r="16" class="node"></circle>
+            <text x="410" y="65" text-anchor="middle" class="label">e</text>
+
+            <rect x="18" y="155" width="484" height="40" rx="12" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.10)"/>
+            <text x="32" y="180" class="dist">Insert/Query chạy theo độ dài xâu; hợp bài “đếm tiền tố”.</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- Advanced topics -->
+  <section class="card section" id="adv">
+    <div class="hd">
+      <h2>🚀 Chủ đề nâng cao (thi tỉnh/thi quốc gia)</h2>
+      <span class="pill">TopoSort • Euler tour • DSU rollback • Mo’s • HLD</span>
+    </div>
+    <div class="bd split">
+      <div>
+        <h3>1) Topological Sort (TopoSort)</h3>
+        <ul class="list">
+          <li><b>Bài toán:</b> sắp xếp thứ tự công việc với các ràng buộc trước–sau (DAG).</li>
+          <li><b>Kahn (BFS indegree):</b> lấy dần các đỉnh indegree=0.</li>
+          <li><b>DFS topo:</b> push vào stack khi “thoát” đỉnh.</li>
+          <li><b>Bẫy:</b> nếu còn đỉnh chưa lấy mà queue rỗng ⇒ có <b>chu trình</b> (không có topo).</li>
+        </ul>
+        <div class="mono"># Test topo có chu trình
+4 4
+1 2
+2 3
+3 1
+3 4
+# Expected: NO TOPO (cycle)</div>
+
+        <h3 style="margin-top:14px">2) Euler Tour (tin/tout) + Subtree</h3>
+        <ul class="list">
+          <li><b>Ý tưởng:</b> DFS gán thời gian vào/ra: <span style="font-family:var(--mono)">tin[u]</span>, <span style="font-family:var(--mono)">tout[u]</span>.</li>
+          <li><b>Tính chất:</b> <b>subtree(u)</b> là đoạn liên tiếp trong Euler: <span style="font-family:var(--mono)">[tin[u], tout[u]]</span>.</li>
+          <li><b>Ứng dụng:</b> query/update subtree bằng BIT/SegTree; đổi bài cây → bài mảng.</li>
+          <li><b>Bẫy:</b> chọn root; input không phải cây; quên parent.</li>
+        </ul>
+      </div>
+
+      <div class="svgwrap">
+        <div class="hd" style="border-bottom:none">
+          <h2 style="font-size:13px;margin:0">Hình Euler Tour (subtree là đoạn liên tiếp)</h2>
+          <span class="pill">tin/tout</span>
+        </div>
+        <svg viewBox="0 0 520 250" role="img" aria-label="Minh hoạ Euler tour">
+          <text x="18" y="26" class="label">Cây: 1-2,1-3,2-4,2-5,3-6</text>
+          <line x1="260" y1="60" x2="160" y2="110" class="edge"></line>
+          <line x1="260" y1="60" x2="360" y2="110" class="edge"></line>
+          <line x1="160" y1="110" x2="110" y2="170" class="edge"></line>
+          <line x1="160" y1="110" x2="210" y2="170" class="edge"></line>
+          <line x1="360" y1="110" x2="410" y2="170" class="edge"></line>
+
+          <circle cx="260" cy="60" r="18" class="node start"></circle>
+          <circle cx="160" cy="110" r="18" class="node"></circle>
+          <circle cx="360" cy="110" r="18" class="node"></circle>
+          <circle cx="110" cy="170" r="18" class="node"></circle>
+          <circle cx="210" cy="170" r="18" class="node"></circle>
+          <circle cx="410" cy="170" r="18" class="node"></circle>
+          <text x="260" y="65" text-anchor="middle" class="label">1</text>
+          <text x="160" y="115" text-anchor="middle" class="label">2</text>
+          <text x="360" y="115" text-anchor="middle" class="label">3</text>
+          <text x="110" y="175" text-anchor="middle" class="label">4</text>
+          <text x="210" y="175" text-anchor="middle" class="label">5</text>
+          <text x="410" y="175" text-anchor="middle" class="label">6</text>
+
+          <rect x="18" y="195" width="484" height="40" rx="12" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.10)"/>
+          <text x="32" y="220" class="dist">Ví dụ Euler (tin): 1,2,4,5,3,6 ⇒ subtree(2) = đoạn [2..4].</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="bd split" style="border-top:1px solid var(--line)">
+      <div>
+        <h3>3) DSU Rollback (DSU có hoàn tác)</h3>
+        <ul class="list">
+          <li><b>Ý tưởng:</b> DSU union không path-compress; lưu “lịch sử” thay đổi vào stack để rollback.</li>
+          <li><b>Dùng khi:</b> bài offline có thêm/xoá cạnh theo thời gian (dynamic connectivity) + chia đoạn thời gian.</li>
+          <li><b>Bẫy:</b> nếu dùng path compression sẽ rollback rất khó; cần union-by-size/rank.</li>
+        </ul>
+        <div class="mono"># Test ý tưởng (offline)
+add 1-2
+add 2-3
+ask 1 3 => YES
+remove 2-3
+ask 1 3 => NO</div>
+
+        <h3 style="margin-top:14px">4) Mo’s Algorithm</h3>
+        <ul class="list">
+          <li><b>Ý tưởng:</b> sắp xếp query theo block(L) rồi theo R để giảm số lần add/remove.</li>
+          <li><b>Dùng khi:</b> nhiều query trên mảng tĩnh, cần trả lời offline (distinct, freq, XOR...).</li>
+          <li><b>Bẫy:</b> block size ≈ sqrt(n); add/remove phải O(1).</li>
+        </ul>
+        <div class="mono"># Test Mo (distinct count)
+a = 1 2 1 3 2 2
+queries: [1,3]=2; [2,6]=3; [4,6]=2</div>
+      </div>
+
+      <div>
+        <h3>5) HLD (Heavy-Light Decomposition)</h3>
+        <ul class="list">
+          <li><b>Mục tiêu:</b> query/update trên đường đi u–v (path query) bằng Segment Tree.</li>
+          <li><b>Ý tưởng:</b> chia cây thành các “heavy paths”; đường u–v cắt thành O(log n) đoạn liên tiếp.</li>
+          <li><b>Kết hợp:</b> HLD + segtree (sum/min/max).</li>
+          <li><b>Bẫy:</b> build 2 DFS (size/heavy rồi decompose); chú ý head/pos.</li>
+        </ul>
+
+        <div class="svgwrap" style="margin-top:10px">
+          <svg viewBox="0 0 520 210" role="img" aria-label="Minh hoạ HLD">
+            <text x="18" y="26" class="label">HLD: tô đậm cạnh heavy (đường nặng)</text>
+            <line x1="260" y1="55" x2="160" y2="95" class="edge relax"></line>
+            <line x1="260" y1="55" x2="360" y2="95" class="edge"></line>
+            <line x1="160" y1="95" x2="120" y2="155" class="edge relax"></line>
+            <line x1="160" y1="95" x2="200" y2="155" class="edge"></line>
+            <line x1="360" y1="95" x2="420" y2="155" class="edge relax"></line>
+
+            <circle cx="260" cy="55" r="18" class="node start"></circle>
+            <circle cx="160" cy="95" r="18" class="node"></circle>
+            <circle cx="360" cy="95" r="18" class="node"></circle>
+            <circle cx="120" cy="155" r="18" class="node"></circle>
+            <circle cx="200" cy="155" r="18" class="node"></circle>
+            <circle cx="420" cy="155" r="18" class="node"></circle>
+            <text x="260" y="60" text-anchor="middle" class="label">1</text>
+            <text x="160" y="100" text-anchor="middle" class="label">2</text>
+            <text x="360" y="100" text-anchor="middle" class="label">3</text>
+            <text x="120" y="160" text-anchor="middle" class="label">4</text>
+            <text x="200" y="160" text-anchor="middle" class="label">5</text>
+            <text x="420" y="160" text-anchor="middle" class="label">6</text>
+
+            <rect x="18" y="170" width="484" height="30" rx="12" fill="rgba(2,6,23,.03)" stroke="rgba(2,6,23,.10)"/>
+            <text x="32" y="190" class="dist">Đường u–v được chia thành vài đoạn trên heavy path → query bằng segtree.</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C++ templates -->
+  <section class="card section" id="cpp">
+    <div class="hd">
+      <h2>💻 C++ templates (copy dùng ngay)</h2>
+      <div class="btnrow">
+        <select id="snippetSelect" aria-label="Chọn code C++">
+          <option value="bfs">BFS (unweighted shortest path)</option>
+          <option value="dfs">DFS (liên thông + chu trình vô hướng)</option>
+          <option value="zobfs">0-1 BFS (deque)</option>
+          <option value="dijkstra">Dijkstra (priority_queue)</option>
+          <option value="bellman">Bellman-Ford (+ lan truyền chu trình âm)</option>
+          <option value="floyd">Floyd-Warshall (all pairs)</option>
+          <option value="loang">Loang (grid BFS)</option>
+          <option value="prim">Prim (MST)</option>
+          <option value="kruskal">Kruskal (MST + DSU)</option>
+          <option value="scc">SCC (Kosaraju)</option>
+          <option value="bridge">Cầu/Khớp (Tarjan tin/low)</option>
+          <option value="lca">LCA (Binary lifting)</option>
+          <option value="seg">Segment Tree (range min)</option>
+          <option value="bit">Fenwick Tree (range sum)</option>
+          <option value="trie">Trie (đếm số xâu có tiền tố)</option>
+          <option value="topo">TopoSort (Kahn + DFS)</option>
+          <option value="euler">Euler Tour (tin/tout + subtree)</option>
+          <option value="dsuroll">DSU Rollback (offline dynamic connectivity)</option>
+          <option value="mos">Mo’s Algorithm (offline range query)</option>
+          <option value="hld">HLD (Heavy-Light Decomposition)</option>
+        </select>
+        <button id="copyBtn">📋 Copy</button>
+      </div>
+    </div>
+    <div class="bd">
+      <div class="mono" id="cppBox"></div>
+      <p class="small" style="margin:10px 0 0">
+        Gợi ý dạy đội tuyển: yêu cầu học sinh <b>tự viết lại template</b> + chạy test bẫy ở mục trên.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="card">
+      <div class="bd">
+        <div><b>Tip in tài liệu:</b> dùng chức năng Print của trình duyệt, trang sẽ tự ẩn menu/nút và dàn lại cho dễ in.</div>
+        <div style="margin-top:6px">Nếu bạn muốn mình bổ sung thêm: Toposort, SCC Tarjan, Euler/Hamilton, LCA+RMQ, DSU rollback… mình có thể gắn tiếp theo đúng format.</div>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<script>
+/* =========================
+   BASE GRAPH for simulations
+   ========================= */
+const G = {
+  n: 6,
+  pos: {
+    1: [90, 120],
+    2: [220, 70],
+    3: [350, 120],
+    4: [120, 250],
+    5: [260, 270],
+    6: [410, 240],
+  },
+  // undirected edges (BFS/DFS/Dijkstra/Prim/Kruskal)
+  edgesU: [
+    {u:1,v:2,w:4},
+    {u:2,v:3,w:2},
+    {u:1,v:4,w:1},
+    {u:4,v:5,w:7},
+    {u:2,v:5,w:3},
+    {u:3,v:6,w:5},
+    {u:5,v:6,w:1},
+    {u:3,v:5,w:6},
+  ],
+  // directed for Bellman demo (has negative cycle reachable)
+  edgesBell: [
+    {u:1,v:2,w:3},
+    {u:2,v:3,w:5},
+    {u:3,v:4,w:3},
+    {u:4,v:5,w:-8},
+    {u:5,v:3,w:4},
+    {u:1,v:6,w:2},
+  ],
+  // directed for SCC demo
+  edgesSCC: [
+    {u:1,v:2,w:0},{u:2,v:3,w:0},{u:3,v:1,w:0},  // SCC {1,2,3}
+    {u:3,v:4,w:0},
+    {u:4,v:5,w:0},{u:5,v:4,w:0},                // SCC {4,5}
+    {u:5,v:6,w:0},
+  ],
+  start: 1
+};
+
+const elEdges = document.getElementById("edges");
+const elNodes = document.getElementById("nodes");
+const statusTitle = document.getElementById("statusTitle");
+const statusLine  = document.getElementById("statusLine");
+const modePill = document.getElementById("modePill");
+const hintLine = document.getElementById("hintLine");
+
+function keyEdgeU(a,b){ return a<b ? `${a}-${b}` : `${b}-${a}`; }
+function keyEdgeD(u,v){ return `${u}->${v}`; }
+
+/* =========================
+   Render SVG (graph area)
+   ========================= */
+const edgeEls = new Map();
+const nodeEls = new Map();
+const distEls = new Map();
+
+function renderGraph({directed=false, edges=[]}={}){
+  elEdges.innerHTML = "";
+  elNodes.innerHTML = "";
+  edgeEls.clear(); nodeEls.clear(); distEls.clear();
+
+  // edges
+  for(const e of edges){
+    const [x1,y1] = G.pos[e.u];
+    const [x2,y2] = G.pos[e.v];
+    const midx = (x1+x2)/2, midy = (y1+y2)/2;
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute("x1",x1); line.setAttribute("y1",y1);
+    line.setAttribute("x2",x2); line.setAttribute("y2",y2);
+    let cls = "edge";
+    if(directed) cls += " dir";
+    line.setAttribute("class", cls);
+    if(directed) line.setAttribute("marker-end","url(#arrowA)");
+    elEdges.appendChild(line);
+
+    // weight label
+    const wt = document.createElementNS("http://www.w3.org/2000/svg","text");
+    wt.setAttribute("x",midx+6);
+    wt.setAttribute("y",midy-6);
+    wt.setAttribute("class","weight");
+    wt.textContent = (e.w!==undefined ? e.w : "");
+    elEdges.appendChild(wt);
+
+    const k = directed ? keyEdgeD(e.u,e.v) : keyEdgeU(e.u,e.v);
+    edgeEls.set(k, line);
+  }
+
+  // nodes
+  for(let i=1;i<=G.n;i++){
+    const [x,y] = G.pos[i];
+    const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+
+    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",x); c.setAttribute("cy",y);
+    c.setAttribute("r","20");
+    c.setAttribute("class", "node" + (i===G.start ? " start":""));
+    g.appendChild(c);
+
+    const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x",x);
+    t.setAttribute("y",y+5);
+    t.setAttribute("text-anchor","middle");
+    t.setAttribute("class","label");
+    t.textContent = String(i);
+    g.appendChild(t);
+
+    const d = document.createElementNS("http://www.w3.org/2000/svg","text");
+    d.setAttribute("x",x);
+    d.setAttribute("y",y+34);
+    d.setAttribute("text-anchor","middle");
+    d.setAttribute("class","dist");
+    d.textContent = "";
+    g.appendChild(d);
+
+    elNodes.appendChild(g);
+    nodeEls.set(i,c);
+    distEls.set(i,d);
+  }
+}
+
+/* =========================
+   Adj list helper (undirected)
+   ========================= */
+function buildAdjUndirected(){
+  const adj = Array.from({length:G.n+1}, ()=>[]);
+  for(const e of G.edgesU){
+    adj[e.u].push({to:e.v, w:e.w});
+    adj[e.v].push({to:e.u, w:e.w});
+  }
+  for(let i=1;i<=G.n;i++) adj[i].sort((a,b)=>a.to-b.to);
+  return adj;
+}
+const adjU = buildAdjUndirected();
+
+/* =========================
+   Styling helpers
+   ========================= */
+let timer = null;
+function clearTimer(){ if(timer){ clearInterval(timer); timer=null; } }
+
+let currentRender = {directed:false, edges:G.edgesU};
+
+function resetStyles(){
+  const {directed, edges} = currentRender;
+  for(let i=1;i<=G.n;i++){
+    nodeEls.get(i).setAttribute("class","node"+(i===G.start?" start":""));
+    distEls.get(i).textContent = "";
+  }
+  for(const e of edges){
+    const k = directed ? keyEdgeD(e.u,e.v) : keyEdgeU(e.u,e.v);
+    const line = edgeEls.get(k);
+    if(!line) continue;
+    let cls = "edge" + (directed ? " dir":"");
+    line.setAttribute("class", cls);
+    if(directed) line.setAttribute("marker-end","url(#arrowA)");
+  }
+}
+
+function setNodeState(i, st){
+  const base = "node" + (i===G.start ? " start":"");
+  nodeEls.get(i).setAttribute("class", st==="none" ? base : base + " " + st);
+}
+
+function setEdgeActive(u,v, cls, directed=false){
+  const k = directed ? keyEdgeD(u,v) : keyEdgeU(u,v);
+  const line = edgeEls.get(k);
+  if(!line) return;
+  const base = "edge" + (directed ? " dir":"");
+  line.setAttribute("class", base + " " + (cls||"active"));
+  if(directed){
+    if(cls==="bad") line.setAttribute("marker-end","url(#arrowBad)");
+    else line.setAttribute("marker-end","url(#arrowActive)");
+  }
+}
+
+/* =========================
+   Engines
+   ========================= */
+let mode = "bfs";
+let engine = null;
+
+function makeBFSEngine(){
+  const vis = Array(G.n+1).fill(false);
+  const q = [G.start];
+  vis[G.start]=true;
+  let cur=null, phase=0, it=0;
+
+  return {
+    step(){
+      if(q.length===0 && cur===null) return {done:true, msg:"Kết thúc BFS."};
+      if(phase===0){
+        cur=q.shift(); it=0;
+        setNodeState(cur,"cur");
+        statusLine.textContent = `BFS: pop ${cur} khỏi queue.`;
+        phase=1; return {done:false};
+      }else{
+        const neigh=adjU[cur];
+        if(it>=neigh.length){
+          setNodeState(cur,"done");
+          statusLine.textContent = `BFS: xong ${cur}.`;
+          cur=null; phase=0; return {done:false};
+        }
+        const v=neigh[it++].to;
+        setEdgeActive(cur,v,"active",false);
+        if(!vis[v]){
+          vis[v]=true; q.push(v);
+          setNodeState(v,"vis");
+          statusLine.textContent = `BFS: thăm ${v} → push vào queue.`;
+        }else{
+          statusLine.textContent = `BFS: gặp ${v} đã visited.`;
+        }
+        return {done:false};
+      }
+    }
+  };
+}
+
+function makeDFSEngine(){
+  const vis = Array(G.n+1).fill(false);
+  const st=[{u:G.start, idx:0, parent:0}];
+  vis[G.start]=true; setNodeState(G.start,"vis");
+
+  return {
+    step(){
+      if(st.length===0) return {done:true, msg:"Kết thúc DFS."};
+      const top=st[st.length-1];
+      const u=top.u;
+      setNodeState(u,"cur");
+      const neigh=adjU[u];
+
+      while(top.idx<neigh.length && vis[neigh[top.idx].to]) top.idx++;
+      if(top.idx>=neigh.length){
+        setNodeState(u,"done");
+        st.pop();
+        statusLine.textContent = `DFS: backtrack khỏi ${u}.`;
+        return {done:false};
+      }
+      const v=neigh[top.idx++].to;
+      setEdgeActive(u,v,"active",false);
+      if(!vis[v]){
+        vis[v]=true;
+        setNodeState(v,"vis");
+        st.push({u:v, idx:0, parent:u});
+        statusLine.textContent = `DFS: đi sâu ${u} → ${v}.`;
+      }else{
+        statusLine.textContent = `DFS: gặp ${v} đã visited.`;
+      }
+      return {done:false};
+    }
+  };
+}
+
+function make01BFSEngine(){
+  // demo graph 0/1 independent of G.edgesU to show deque behavior clearly
+  const edges01 = [
+    {u:1,v:2,w:0},
+    {u:2,v:3,w:1},
+    {u:1,v:4,w:1},
+    {u:4,v:5,w:0},
+    {u:5,v:3,w:0},
+    {u:3,v:6,w:1},
+  ];
+  const adj = Array.from({length:G.n+1},()=>[]);
+  for(const e of edges01){
+    adj[e.u].push({to:e.v,w:e.w});
+    adj[e.v].push({to:e.u,w:e.w});
+  }
+
+  const INF = 1e9;
+  const dist = Array(G.n+1).fill(INF);
+  let dq = [G.start];
+  dist[G.start]=0;
+  setNodeState(G.start,"vis");
+
+  function show(){
+    for(let i=1;i<=G.n;i++){
+      distEls.get(i).textContent = dist[i]>=INF ? "∞" : ("d="+dist[i]);
+    }
+  }
+  show();
+
+  return {
+    step(){
+      if(dq.length===0) return {done:true, msg:"0-1 BFS: deque rỗng → kết thúc."};
+      const u = dq.shift();
+      setNodeState(u,"cur");
+      statusLine.textContent = `0-1 BFS: pop_front ${u}.`;
+
+      for(const {to:v,w} of adj[u]){
+        setEdgeActive(u,v, w===0 ? "relax":"active", false);
+        if(dist[v] > dist[u] + w){
+          dist[v] = dist[u] + w;
+          setNodeState(v,"vis");
+          if(w===0) dq.unshift(v);
+          else dq.push(v);
+        }
+      }
+      show();
+      setNodeState(u,"done");
+      return {done:false};
+    }
+  };
+}
+
+function makeDijkstraEngine(){
+  const INF = 1e18;
+  const dist = Array(G.n+1).fill(INF);
+  const used = Array(G.n+1).fill(false);
+  dist[G.start]=0;
+  setNodeState(G.start,"vis");
+
+  function pickMin(){
+    let u=0, best=INF;
+    for(let i=1;i<=G.n;i++){
+      if(!used[i] && dist[i]<best){ best=dist[i]; u=i; }
+    }
+    return u;
+  }
+  function showDist(){
+    for(let i=1;i<=G.n;i++){
+      distEls.get(i).textContent = dist[i]>=INF/2 ? "∞" : ("d="+dist[i]);
+    }
+  }
+  showDist();
+
+  let cur=0, idx=0, phase=0;
+  return {
+    step(){
+      if(phase===0){
+        cur=pickMin();
+        if(cur===0){
+          statusLine.textContent = "Dijkstra: không còn đỉnh reachable chưa chốt.";
+          return {done:true, msg:"Kết thúc Dijkstra."};
+        }
+        used[cur]=true;
+        idx=0;
+        setNodeState(cur,"cur");
+        statusLine.textContent = `Dijkstra: chọn ${cur} có dist nhỏ nhất.`;
+        phase=1; return {done:false};
+      }else{
+        const neigh=adjU[cur];
+        if(idx>=neigh.length){
+          setNodeState(cur,"done");
+          statusLine.textContent = `Dijkstra: chốt ${cur}.`;
+          phase=0; return {done:false};
+        }
+        const {to:v,w}=neigh[idx++];
+        setEdgeActive(cur,v,"relax",false);
+        if(used[v]){
+          statusLine.textContent = `Dijkstra: bỏ qua ${v} (đã chốt).`;
+          return {done:false};
+        }
+        const nd=dist[cur]+w;
+        if(nd<dist[v]){
+          dist[v]=nd;
+          setNodeState(v,"vis");
+          showDist();
+          statusLine.textContent = `Relax: dist[${v}] = ${nd} (qua ${cur}).`;
+        }else{
+          statusLine.textContent = `Không cải thiện dist[${v}].`;
+        }
+        return {done:false};
+      }
+    }
+  };
+}
+
+function makeBellmanEngine(){
+  const INF = 1e18;
+  const dist = Array(G.n+1).fill(INF);
+  dist[G.start]=0;
+  setNodeState(G.start,"vis");
+
+  function showDist(){
+    for(let i=1;i<=G.n;i++){
+      distEls.get(i).textContent = dist[i]>=INF/2 ? "∞" : ("d="+dist[i]);
+    }
+  }
+  showDist();
+
+  let i=1; // iteration 1..n
+  let eidx=0;
+  let lastRelax=false;
+
+  return {
+    step(){
+      if(i>G.n){
+        statusLine.textContent = "Bellman: đã đi qua n vòng (demo).";
+        return {done:true, msg:"Kết thúc Bellman-Ford (demo)."};
+      }
+
+      if(eidx===0){
+        lastRelax=false;
+        statusLine.textContent = `Bellman vòng ${i}: duyệt từng cạnh để relax.`;
+      }
+
+      if(eidx>=G.edgesBell.length){
+        if(!lastRelax){
+          statusLine.textContent = `Bellman: vòng ${i} không relax gì → dừng sớm.`;
+          return {done:true, msg:"Bellman-Ford dừng sớm (không còn cập nhật)."};
+        }
+        i++; eidx=0;
+        return {done:false};
+      }
+
+      const e = G.edgesBell[eidx++];
+      setEdgeActive(e.u,e.v, e.w<0 ? "bad":"relax", true);
+
+      if(dist[e.u] < INF/2 && dist[e.u] + e.w < dist[e.v]){
+        dist[e.v] = dist[e.u] + e.w;
+        showDist();
+        setNodeState(e.v,"vis");
+        lastRelax=true;
+
+        if(i===G.n){
+          statusLine.textContent = `Bellman: relax ở vòng n ⇒ có chu trình âm (reachable).`;
+        }else{
+          statusLine.textContent = `Bellman: relax dist[${e.v}] = dist[${e.u}] + ${e.w}.`;
+        }
+      }else{
+        statusLine.textContent = `Bellman: không relax cạnh ${e.u}→${e.v}.`;
+      }
+      return {done:false};
+    }
+  };
+}
+
+function makePrimEngine(){
+  const INF = 1e18;
+  const key = Array(G.n+1).fill(INF);
+  const inMST = Array(G.n+1).fill(false);
+  const parent = Array(G.n+1).fill(0);
+
+  key[G.start]=0;
+  setNodeState(G.start,"vis");
+
+  function pickMin(){
+    let u=0, best=INF;
+    for(let i=1;i<=G.n;i++){
+      if(!inMST[i] && key[i]<best){ best=key[i]; u=i; }
+    }
+    return u;
+  }
+  function showKey(){
+    for(let i=1;i<=G.n;i++){
+      distEls.get(i).textContent = key[i]>=INF/2 ? "∞" : ("key="+key[i]);
+    }
+  }
+  showKey();
+
+  let u=0, idx=0, phase=0;
+  return {
+    step(){
+      if(phase===0){
+        u=pickMin();
+        if(u===0) return {done:true, msg:"Kết thúc Prim."};
+        inMST[u]=true;
+        setNodeState(u,"done");
+        if(parent[u]){
+          setEdgeActive(u,parent[u],"relax",false);
+          statusLine.textContent = `Prim: thêm ${u} vào MST (qua ${parent[u]}).`;
+        }else{
+          statusLine.textContent = `Prim: chọn gốc ${u}.`;
+        }
+        idx=0; phase=1; return {done:false};
+      }else{
+        const neigh=adjU[u];
+        if(idx>=neigh.length){ phase=0; return {done:false}; }
+        const {to:v,w}=neigh[idx++];
+        setEdgeActive(u,v,"active",false);
+        if(!inMST[v] && w < key[v]){
+          key[v]=w; parent[v]=u;
+          setNodeState(v,"vis");
+          showKey();
+          statusLine.textContent = `Prim: cập nhật key[${v}] = ${w} (từ ${u}).`;
+        }else{
+          statusLine.textContent = `Prim: bỏ qua cạnh ${u}-${v}.`;
+        }
+        return {done:false};
+      }
+    }
+  };
+}
+
+function makeKruskalEngine(){
+  const edges = [...G.edgesU].sort((a,b)=>a.w-b.w);
+  const parent = Array(G.n+1).fill(0).map((_,i)=>i);
+  const sz = Array(G.n+1).fill(1);
+
+  function find(x){ return parent[x]===x?x:(parent[x]=find(parent[x])); }
+  function unite(a,b){
+    a=find(a); b=find(b);
+    if(a===b) return false;
+    if(sz[a]<sz[b]){ const t=a; a=b; b=t; }
+    parent[b]=a; sz[a]+=sz[b];
+    return true;
+  }
+
+  let idx=0, chosen=0, total=0;
+
+  return {
+    step(){
+      if(chosen===G.n-1) return {done:true, msg:`Kết thúc Kruskal. MST weight=${total}.`};
+      if(idx>=edges.length) return {done:true, msg:"Kruskal: hết cạnh (đồ thị có thể không liên thông)."};
+      const e=edges[idx++];
+      setEdgeActive(e.u,e.v,"active",false);
+
+      if(unite(e.u,e.v)){
+        chosen++; total+=e.w;
+        setEdgeActive(e.u,e.v,"relax",false);
+        setNodeState(e.u,"done");
+        setNodeState(e.v,"done");
+        statusLine.textContent = `Chọn cạnh (${e.u},${e.v}) w=${e.w}. Tổng=${total}.`;
+      }else{
+        statusLine.textContent = `Bỏ cạnh (${e.u},${e.v}) w=${e.w} (tạo chu trình).`;
+      }
+      return {done:false};
+    }
+  };
+}
+
+function makeSCCEngine(){
+  const edges = G.edgesSCC.map(e=>[e.u,e.v]);
+  const adj = Array.from({length:G.n+1},()=>[]);
+  const radj= Array.from({length:G.n+1},()=>[]);
+  for(const [u,v] of edges){ adj[u].push(v); radj[v].push(u); }
+
+  let vis = Array(G.n+1).fill(false);
+  let order = [];
+  let phase=0;
+  let stack = [];
+  let i=1;
+
+  let comp = Array(G.n+1).fill(0);
+  let cid=0;
+  let idxOrder=0;
+
+  function pushDFS1(start){
+    stack=[{u:start, idx:0}];
+    vis[start]=true;
+  }
+  function pushDFS2(start){
+    stack=[{u:start, idx:0}];
+    comp[start]=cid;
+  }
+
+  return {
+    step(){
+      // pass1: build order
+      if(phase===0){
+        while(i<=G.n && vis[i]) i++;
+        if(i>G.n){
+          phase=1;
+          order.reverse();
+          idxOrder=0;
+          statusLine.textContent="SCC: Pass2 trên graph đảo (tô màu SCC).";
+          return {done:false};
+        }
+        if(stack.length===0){
+          pushDFS1(i);
+          statusLine.textContent=`SCC Pass1: DFS từ ${i}.`;
+          return {done:false};
+        }
+
+        const top=stack[stack.length-1];
+        const u=top.u;
+        setNodeState(u,"cur");
+
+        if(top.idx < adj[u].length){
+          const v=adj[u][top.idx++];
+          setEdgeActive(u,v,"active",true);
+          if(!vis[v]){
+            vis[v]=true;
+            stack.push({u:v, idx:0});
+            statusLine.textContent=`Pass1: đi ${u}→${v}.`;
+          }else{
+            statusLine.textContent=`Pass1: gặp ${v} đã thăm.`;
+          }
+          return {done:false};
+        }else{
+          order.push(u);
+          setNodeState(u,"done");
+          stack.pop();
+          statusLine.textContent=`Pass1: push ${u} vào order.`;
+          return {done:false};
+        }
+      }
+
+      // pass2: color SCC on reverse graph
+      if(phase===1){
+        while(idxOrder<order.length && comp[order[idxOrder]]!==0) idxOrder++;
+        if(idxOrder>=order.length) return {done:true, msg:`SCC xong. Số SCC = ${cid}.`};
+
+        if(stack.length===0){
+          cid++;
+          const s=order[idxOrder];
+          pushDFS2(s);
+          statusLine.textContent=`Pass2: bắt đầu SCC#${cid} từ ${s}.`;
+          return {done:false};
+        }
+
+        const top=stack[stack.length-1];
+        const u=top.u;
+        setNodeState(u,"cur");
+        distEls.get(u).textContent = "SCC#"+cid;
+
+        if(top.idx < radj[u].length){
+          const v=radj[u][top.idx++];
+          if(comp[v]===0){
+            comp[v]=cid;
+            stack.push({u:v, idx:0});
+            statusLine.textContent=`Pass2: đi ${u}→${v} trên graph đảo.`;
+          }else{
+            statusLine.textContent=`Pass2: ${v} đã có SCC.`;
+          }
+          return {done:false};
+        }else{
+          setNodeState(u,"done");
+          stack.pop();
+          return {done:false};
+        }
+      }
+    }
+  };
+}
+
+function makeBridgeEngine(){
+  // undirected demo edges for bridge concept
+  const edges = [
+    [1,2],[2,3],[3,4],[3,5],[5,6],[2,5]
+  ];
+  const adj = Array.from({length:G.n+1},()=>[]);
+  for(const [u,v] of edges){ adj[u].push(v); adj[v].push(u); }
+  for(let i=1;i<=G.n;i++) adj[i].sort((a,b)=>a-b);
+
+  let timer=0;
+  const tin=Array(G.n+1).fill(0);
+  const low=Array(G.n+1).fill(0);
+  const vis=Array(G.n+1).fill(false);
+  const st=[{u:G.start, p:0, idx:0, entered:false}];
+
+  function show(u){
+    distEls.get(u).textContent = `tin=${tin[u]},low=${low[u]}`;
+  }
+
+  return {
+    step(){
+      if(st.length===0) return {done:true, msg:"Xong demo cầu/khớp (cầu được tô đỏ)."};
+
+      const top=st[st.length-1];
+      const u=top.u, p=top.p;
+
+      if(!top.entered){
+        vis[u]=true;
+        tin[u]=low[u]=++timer;
+        top.entered=true;
+        setNodeState(u,"cur");
+        show(u);
+        statusLine.textContent=`DFS vào ${u}: tin=low=${tin[u]}.`;
+        return {done:false};
+      }
+
+      if(top.idx >= adj[u].length){
+        st.pop();
+        setNodeState(u,"done");
+        statusLine.textContent=`Thoát ${u}.`;
+
+        if(st.length>0){
+          const par = st[st.length-1].u;
+          low[par] = Math.min(low[par], low[u]);
+          show(par);
+          // bridge condition
+          if(low[u] > tin[par]){
+            setEdgeActive(par,u,"bad",false);
+            statusLine.textContent=`CẦU: (${par},${u}) vì low[${u}](${low[u]}) > tin[${par}](${tin[par]}).`;
+          }
+        }
+        return {done:false};
+      }
+
+      const v = adj[u][top.idx++];
+      if(v===p) return {done:false};
+
+      if(vis[v]){
+        low[u] = Math.min(low[u], tin[v]);
+        show(u);
+        statusLine.textContent=`Back-edge ${u}—${v}: low[${u}] = min(low, tin[${v}]).`;
+        return {done:false};
+      }else{
+        st.push({u:v, p:u, idx:0, entered:false});
+        setEdgeActive(u,v,"active",false);
+        statusLine.textContent=`Tree-edge ${u}→${v}.`;
+        return {done:false};
+      }
+    }
+  };
+}
+
+function makeLCAEngine(){
+  // tree demo: 1-2,1-3,2-4,2-5,3-6
+  const parent = {1:0,2:1,3:1,4:2,5:2,6:3};
+  const depth  = {1:0,2:1,3:1,4:2,5:2,6:2};
+
+  let a=4, b=6; // LCA should be 1
+  let phase=0;
+
+  for(let i=1;i<=G.n;i++){
+    distEls.get(i).textContent = depth[i]!==undefined ? ("dep="+depth[i]) : "";
+  }
+
+  return {
+    step(){
+      for(let i=1;i<=G.n;i++) setNodeState(i,"none");
+      setNodeState(a,"cur");
+      setNodeState(b,"vis");
+
+      if(phase===0){
+        if(depth[a] > depth[b]){
+          statusLine.textContent = `LCA: nâng a lên (a=${a}→${parent[a]}).`;
+          a = parent[a];
+          return {done:false};
+        }
+        if(depth[b] > depth[a]){
+          statusLine.textContent = `LCA: nâng b lên (b=${b}→${parent[b]}).`;
+          b = parent[b];
+          return {done:false};
+        }
+        phase=1;
+        statusLine.textContent = "LCA: đã cùng độ sâu. Bắt đầu nhảy đồng thời lên cha.";
+        return {done:false};
+      }else{
+        if(a===b){
+          setNodeState(a,"done");
+          return {done:true, msg:`LCA = ${a}`};
+        }
+        statusLine.textContent = `LCA: nhảy lên (a=${a}→${parent[a]}, b=${b}→${parent[b]}).`;
+        a = parent[a];
+        b = parent[b];
+        return {done:false};
+      }
+    }
+  };
+}
+
+/* =========================
+   Mode switching
+   ========================= */
+function setMode(m){
+  mode=m;
+  clearTimer();
+
+  // choose edges + directed display
+  let directed=false;
+  let edges=G.edgesU;
+
+  if(m==="bellman"){ directed=true; edges=G.edgesBell; }
+  if(m==="scc"){ directed=true; edges=G.edgesSCC; }
+  // For 0-1 BFS / bridge / lca we keep undirected base edges for rendering (simple), but engine uses its own logic.
+  currentRender = {directed, edges};
+
+  renderGraph({directed, edges});
+  resetStyles();
+
+  const name =
+    m==="bfs"?"BFS":
+    m==="dfs"?"DFS":
+    m==="zobfs"?"0-1 BFS":
+    m==="dijkstra"?"Dijkstra":
+    m==="bellman"?"Bellman-Ford":
+    m==="prim"?"Prim":
+    m==="kruskal"?"Kruskal":
+    m==="scc"?"SCC":
+    m==="bridge"?"Cầu (tin/low)":
+    "LCA";
+
+  modePill.textContent = name;
+  statusTitle.textContent = `${name} — mô phỏng`;
+
+  if(m==="bfs"){
+    hintLine.textContent = "BFS: queue; duyệt theo lớp; đường đi ngắn theo số cạnh.";
+    engine=makeBFSEngine();
+  }else if(m==="dfs"){
+    hintLine.textContent = "DFS: stack/đệ quy; liên thông, chu trình, topo (DAG).";
+    engine=makeDFSEngine();
+  }else if(m==="zobfs"){
+    hintLine.textContent = "0-1 BFS: w∈{0,1}; deque push_front/push_back; O(n+m).";
+    engine=make01BFSEngine();
+  }else if(m==="dijkstra"){
+    hintLine.textContent = "Dijkstra: w ≥ 0; relax; ưu tiên dist nhỏ nhất.";
+    engine=makeDijkstraEngine();
+  }else if(m==="bellman"){
+    hintLine.textContent = "Bellman-Ford: cạnh âm; vòng n còn relax ⇒ chu trình âm reachable.";
+    engine=makeBellmanEngine();
+  }else if(m==="prim"){
+    hintLine.textContent = "Prim (MST): chọn đỉnh mới bằng cạnh rẻ nhất nối vào cây.";
+    engine=makePrimEngine();
+  }else if(m==="kruskal"){
+    hintLine.textContent = "Kruskal (MST): sort cạnh + DSU tránh chu trình.";
+    engine=makeKruskalEngine();
+  }else if(m==="scc"){
+    hintLine.textContent = "SCC Kosaraju: pass1 lấy order; pass2 trên graph đảo để tô SCC.";
+    engine=makeSCCEngine();
+  }else if(m==="bridge"){
+    hintLine.textContent = "Cầu: DFS tin/low; low[v] > tin[u] ⇒ (u,v) là cầu (tô đỏ).";
+    engine=makeBridgeEngine();
+  }else{
+    hintLine.textContent = "LCA (demo): đưa về cùng depth rồi nhảy đồng thời lên cha.";
+    engine=makeLCAEngine();
+  }
+
+  document.getElementById("playBtn").textContent = "▶ Chạy";
+  statusLine.textContent = "Nhấn ▶ để chạy, ⏭ để đi từng bước.";
+}
+
+document.getElementById("modeSelect").addEventListener("change", e => setMode(e.target.value));
+document.getElementById("resetBtn").addEventListener("click", ()=>setMode(mode));
+document.getElementById("stepBtn").addEventListener("click", ()=>{
+  clearTimer();
+  const res = engine.step();
+  if(res?.done){
+    statusLine.textContent = res.msg || "Kết thúc.";
+    clearTimer();
+    document.getElementById("playBtn").textContent="▶ Chạy";
+  }
+});
+document.getElementById("playBtn").addEventListener("click", ()=>{
+  if(timer){
+    clearTimer();
+    document.getElementById("playBtn").textContent = "▶ Chạy";
+    return;
+  }
+  document.getElementById("playBtn").textContent = "⏸ Tạm dừng";
+  timer = setInterval(()=>{
+    const res = engine.step();
+    if(res?.done){
+      statusLine.textContent = res.msg || "Kết thúc.";
+      clearTimer();
+      document.getElementById("playBtn").textContent="▶ Chạy";
+    }
+  }, 700);
+});
+
+setMode("bfs");
+
+/* =========================
+   Floyd mini demo (table)
+   ========================= */
+const floydN = 4;
+const INF = 999;
+const floydInit = [
+  [0, 3, INF, 7],
+  [8, 0, 2, INF],
+  [5, INF, 0, 1],
+  [2, INF, INF, 0],
+];
+let floyd = null;
+let fk=0, fi=0, fj=0;
+
+function clone2D(a){ return a.map(r=>r.slice()); }
+
+function renderFloydTable(hi=null, upd=null){
+  const t = document.getElementById("floydTable");
+  t.innerHTML = "";
+  const trh = document.createElement("tr");
+  trh.innerHTML = "<th></th>" + Array.from({length:floydN},(_,i)=>`<th>${i+1}</th>`).join("");
+  t.appendChild(trh);
+
+  for(let i=0;i<floydN;i++){
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = String(i+1);
+    tr.appendChild(th);
+    for(let j=0;j<floydN;j++){
+      const td = document.createElement("td");
+      const val = floyd[i][j];
+      td.textContent = (val>=INF? "∞": val);
+      if(hi && hi.i===i && hi.j===j) td.classList.add("hi");
+      if(upd && upd.i===i && upd.j===j) td.classList.add("upd");
+      tr.appendChild(td);
+    }
+    t.appendChild(tr);
+  }
+}
+
+function resetFloyd(){
+  floyd = clone2D(floydInit);
+  fk=0; fi=0; fj=0;
+  renderFloydTable();
+  document.getElementById("floydInfo").textContent = `k=${fk+1}, i=${fi+1}, j=${fj+1}`;
+}
+resetFloyd();
+
+document.getElementById("floydReset").addEventListener("click", resetFloyd);
+document.getElementById("floydStep").addEventListener("click", ()=>{
+  const i=fi, j=fj, k=fk;
+  const old = floyd[i][j];
+  const cand = (floyd[i][k] >= INF || floyd[k][j] >= INF) ? INF : (floyd[i][k] + floyd[k][j]);
+
+  let upd = null;
+  if(cand < old){
+    floyd[i][j] = cand;
+    upd = {i,j};
+  }
+
+  renderFloydTable({i,j}, upd);
+
+  fj++;
+  if(fj>=floydN){ fj=0; fi++; }
+  if(fi>=floydN){ fi=0; fk++; }
+
+  if(fk>=floydN){
+    document.getElementById("floydInfo").textContent = "Hoàn tất Floyd demo.";
+  }else{
+    document.getElementById("floydInfo").textContent = `k=${fk+1}, i=${fi+1}, j=${fj+1}`;
+  }
+});
+
+/* =========================
+   Loang (grid flood fill) demo
+   ========================= */
+const loangRows=10, loangCols=10;
+const loangInit = [
+  [1,1,0,0,0,1,0,0,0,0],
+  [1,0,0,0,1,1,0,0,0,0],
+  [0,0,1,0,0,0,0,1,1,0],
+  [0,0,1,1,0,0,0,1,0,0],
+  [0,0,0,0,0,1,1,1,0,0],
+  [1,0,0,0,0,0,0,0,0,0],
+  [1,1,0,0,1,1,0,0,0,0],
+  [0,0,0,0,1,0,0,0,1,1],
+  [0,0,0,0,0,0,0,0,1,0],
+  [0,1,1,0,0,0,0,0,0,0],
+];
+let loangA=null, loangVis=null, loangQ=null, loangCur=null, loangStarted=false, loangTimer=null;
+let loangComponents=0;
+
+function renderLoang(){
+  const root=document.getElementById("loangGrid");
+  root.innerHTML="";
+  for(let r=0;r<loangRows;r++){
+    for(let c=0;c<loangCols;c++){
+      const d=document.createElement("div");
+      d.className="cell";
+      if(loangA[r][c]===1) d.classList.add("oil");
+      if(loangVis[r][c]) d.classList.add("vis");
+      if(loangCur && loangCur.r===r && loangCur.c===c) d.classList.add("cur");
+      root.appendChild(d);
+    }
+  }
+}
+
+function resetLoang(){
+  if(loangTimer){ clearInterval(loangTimer); loangTimer=null; }
+  loangA=loangInit.map(row=>row.slice());
+  loangVis=Array.from({length:loangRows},()=>Array(loangCols).fill(false));
+  loangQ=[];
+  loangCur=null;
+  loangStarted=false;
+  loangComponents=0;
+  document.getElementById("loangInfo").textContent="Tìm ô 1 đầu tiên rồi BFS lan ra. (components=0)";
+  renderLoang();
+}
+resetLoang();
+
+function findFirstOne(){
+  for(let r=0;r<loangRows;r++){
+    for(let c=0;c<loangCols;c++){
+      if(loangA[r][c]===1 && !loangVis[r][c]) return {r,c};
+    }
+  }
+  return null;
+}
+
+function loangStepOnce(){
+  const dr=[0,0,1,-1], dc=[1,-1,0,0];
+
+  if(!loangStarted){
+    const s=findFirstOne();
+    if(!s){
+      document.getElementById("loangInfo").textContent=`Hết ô 1 chưa thăm → xong. (components=${loangComponents})`;
+      return {done:true};
+    }
+    loangQ=[s];
+    loangVis[s.r][s.c]=true;
+    loangCur=null;
+    loangStarted=true;
+    loangComponents++;
+    document.getElementById("loangInfo").textContent=`Bắt đầu vùng #${loangComponents} từ (${s.r+1},${s.c+1}).`;
+    renderLoang();
+    return {done:false};
+  }
+
+  if(loangQ.length===0){
+    loangStarted=false;
+    document.getElementById("loangInfo").textContent=`Kết thúc vùng #${loangComponents}. Tìm ô 1 tiếp theo...`;
+    renderLoang();
+    return {done:false};
+  }
+
+  const u=loangQ.shift();
+  loangCur=u;
+
+  for(let k=0;k<4;k++){
+    const nr=u.r+dr[k], nc=u.c+dc[k];
+    if(nr<0||nr>=loangRows||nc<0||nc>=loangCols) continue;
+    if(loangA[nr][nc]===1 && !loangVis[nr][nc]){
+      loangVis[nr][nc]=true;
+      loangQ.push({r:nr,c:nc});
+    }
+  }
+
+  document.getElementById("loangInfo").textContent=`Xử lý (${u.r+1},${u.c+1}) → lan 4 hướng. Queue=${loangQ.length}. (components=${loangComponents})`;
+  renderLoang();
+  return {done:false};
+}
+
+document.getElementById("loangReset").addEventListener("click", resetLoang);
+document.getElementById("loangStep").addEventListener("click", ()=>{
+  if(loangTimer){ clearInterval(loangTimer); loangTimer=null; document.getElementById("loangPlay").textContent="▶ Chạy loang"; }
+  loangStepOnce();
+});
+document.getElementById("loangPlay").addEventListener("click", ()=>{
+  if(loangTimer){
+    clearInterval(loangTimer); loangTimer=null;
+    document.getElementById("loangPlay").textContent="▶ Chạy loang";
+    return;
+  }
+  document.getElementById("loangPlay").textContent="⏸ Tạm dừng";
+  loangTimer=setInterval(()=>{
+    const r=loangStepOnce();
+    if(r?.done){
+      clearInterval(loangTimer); loangTimer=null;
+      document.getElementById("loangPlay").textContent="▶ Chạy loang";
+    }
+  }, 260);
+});
+
+/* =========================
+   C++ snippets
+   ========================= */
+const SNIPPETS = {
+bfs: String.raw`// BFS (unweighted shortest path) + parent
+// Dùng cho "đường đi ngắn" khi mọi cạnh = 1 hoặc không trọng số.
+#include <bits/stdc++.h>
+using namespace std;
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n, m; cin >> n >> m;
+  vector<vector<int>> g(n+1);
+  for(int i=0;i<m;i++){
+    int u,v; cin >> u >> v;
+    g[u].push_back(v);
+    g[v].push_back(u); // bỏ nếu đồ thị có hướng
+  }
+  int s, t; cin >> s >> t;
+
+  vector<int> dist(n+1, -1), par(n+1, -1);
+  queue<int> q;
+  dist[s]=0; q.push(s);
+
+  while(!q.empty()){
+    int u=q.front(); q.pop();
+    for(int v: g[u]){
+      if(dist[v]==-1){
+        dist[v]=dist[u]+1;
+        par[v]=u;
+        q.push(v);
+      }
+    }
+  }
+
+  if(dist[t]==-1){ cout << "NO PATH\n"; return 0; }
+  cout << "dist = " << dist[t] << "\n";
+
+  vector<int> path;
+  for(int v=t; v!=-1; v=par[v]) path.push_back(v);
+  reverse(path.begin(), path.end());
+  for(int v: path) cout << v << " ";
+  cout << "\n";
+}`,
+
+dfs: String.raw`// DFS: đếm thành phần liên thông + phát hiện chu trình vô hướng
+#include <bits/stdc++.h>
+using namespace std;
+
+int n, m;
+vector<vector<int>> g;
+vector<int> vis, parent;
+bool hasCycle=false;
+
+void dfs(int u){
+  vis[u]=1;
+  for(int v: g[u]){
+    if(!vis[v]){
+      parent[v]=u;
+      dfs(v);
+    }else if(v != parent[u]){
+      hasCycle=true;
+    }
+  }
+}
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  cin >> n >> m;
+  g.assign(n+1, {});
+  for(int i=0;i<m;i++){
+    int u,v; cin >> u >> v;
+    g[u].push_back(v);
+    g[v].push_back(u);
+  }
+
+  vis.assign(n+1,0);
+  parent.assign(n+1,0);
+
+  int comps=0;
+  for(int i=1;i<=n;i++){
+    if(!vis[i]){
+      comps++;
+      parent[i]=0;
+      dfs(i);
+    }
+  }
+  cout << "components = " << comps << "\n";
+  cout << "cycle? " << (hasCycle ? "YES":"NO") << "\n";
+}`,
+
+zobfs: String.raw`// 0-1 BFS: cạnh trọng số chỉ 0 hoặc 1 (deque)
+// Time: O(n+m)
+#include <bits/stdc++.h>
+using namespace std;
+const int INF = 1e9;
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,m; cin>>n>>m;
+  vector<vector<pair<int,int>>> g(n+1);
+  for(int i=0;i<m;i++){
+    int u,v,w; cin>>u>>v>>w; // w in {0,1}
+    g[u].push_back({v,w});
+    g[v].push_back({u,w}); // bỏ nếu có hướng
+  }
+  int s,t; cin>>s>>t;
+
+  deque<int> dq;
+  vector<int> dist(n+1, INF), par(n+1, -1);
+  dist[s]=0; dq.push_front(s);
+
+  while(!dq.empty()){
+    int u=dq.front(); dq.pop_front();
+    for(auto [v,w]: g[u]){
+      if(dist[v] > dist[u] + w){
+        dist[v] = dist[u] + w;
+        par[v] = u;
+        if(w==0) dq.push_front(v);
+        else dq.push_back(v);
+      }
+    }
+  }
+
+  if(dist[t]>=INF){ cout<<"NO PATH\n"; return 0; }
+  cout<<"dist="<<dist[t]<<"\n";
+  vector<int> path;
+  for(int v=t; v!=-1; v=par[v]) path.push_back(v);
+  reverse(path.begin(), path.end());
+  for(int v: path) cout<<v<<" ";
+  cout<<"\n";
+}`,
+
+dijkstra: String.raw`// Dijkstra (w >= 0) + truy vết đường đi
+#include <bits/stdc++.h>
+using namespace std;
+
+using ll = long long;
+const ll INF = (ll)4e18;
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n, m; cin >> n >> m;
+  vector<vector<pair<int,int>>> g(n+1);
+  for(int i=0;i<m;i++){
+    int u,v,w; cin >> u >> v >> w;
+    g[u].push_back({v,w});
+    // nếu vô hướng:
+    // g[v].push_back({u,w});
+  }
+  int s, t; cin >> s >> t;
+
+  vector<ll> dist(n+1, INF);
+  vector<int> par(n+1, -1);
+
+  priority_queue<pair<ll,int>, vector<pair<ll,int>>, greater<pair<ll,int>>> pq;
+  dist[s]=0;
+  pq.push({0,s});
+
+  while(!pq.empty()){
+    auto [d,u]=pq.top(); pq.pop();
+    if(d!=dist[u]) continue; // bỏ bản ghi cũ
+    for(auto [v,w]: g[u]){
+      if(dist[v] > dist[u] + w){
+        dist[v] = dist[u] + w;
+        par[v] = u;
+        pq.push({dist[v], v});
+      }
+    }
+  }
+
+  if(dist[t] >= INF/2){ cout << "NO PATH\n"; return 0; }
+  cout << "dist = " << dist[t] << "\n";
+  vector<int> path;
+  for(int v=t; v!=-1; v=par[v]) path.push_back(v);
+  reverse(path.begin(), path.end());
+  for(int v: path) cout << v << " ";
+  cout << "\n";
+}`,
+
+bellman: String.raw`// Bellman-Ford: cạnh có thể âm; phát hiện & lan truyền chu trình âm (reachable)
+// In: n m s, edges u v w (có hướng)
+// Out: dist (unreachable => -1; thuộc/ảnh hưởng chu trình âm => -2)
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+const ll INF = (ll)4e18;
+
+struct Edge{ int u,v; ll w; };
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,m,s; cin>>n>>m>>s;
+  vector<Edge> edges(m);
+  for(int i=0;i<m;i++) cin>>edges[i].u>>edges[i].v>>edges[i].w;
+
+  vector<ll> dist(n+1, INF);
+  dist[s]=0;
+
+  for(int i=1;i<=n-1;i++){
+    bool any=false;
+    for(auto &e: edges){
+      if(dist[e.u] < INF/2 && dist[e.u] + e.w < dist[e.v]){
+        dist[e.v] = dist[e.u] + e.w;
+        any=true;
+      }
+    }
+    if(!any) break;
+  }
+
+  vector<int> bad(n+1,0);
+  for(auto &e: edges){
+    if(dist[e.u] < INF/2 && dist[e.u] + e.w < dist[e.v]){
+      bad[e.v]=1;
+    }
+  }
+  // lan truyền ảnh hưởng
+  for(int i=1;i<=n;i++){
+    for(auto &e: edges){
+      if(bad[e.u]) bad[e.v]=1;
+    }
+  }
+
+  for(int i=1;i<=n;i++){
+    if(bad[i]) cout << -2 << "\n";
+    else if(dist[i] >= INF/2) cout << -1 << "\n";
+    else cout << dist[i] << "\n";
+  }
+}`,
+
+floyd: String.raw`// Floyd-Warshall: all-pairs shortest paths
+// O(n^3). Dùng long long + INF lớn.
+#include <bits/stdc++.h>
+using namespace std;
+const long long INF = (long long)4e18;
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n; cin >> n;
+  vector<vector<long long>> d(n+1, vector<long long>(n+1, INF));
+
+  for(int i=1;i<=n;i++){
+    for(int j=1;j<=n;j++){
+      long long x; cin >> x;
+      // Nếu đề cho 0 nghĩa "không có cạnh" (trừ i=j), đổi thành INF:
+      if(i!=j && x==0) d[i][j]=INF;
+      else d[i][j]=x;
+    }
+  }
+
+  for(int k=1;k<=n;k++)
+    for(int i=1;i<=n;i++)
+      for(int j=1;j<=n;j++)
+        if(d[i][k]<INF/2 && d[k][j]<INF/2)
+          d[i][j] = min(d[i][j], d[i][k] + d[k][j]);
+
+  for(int i=1;i<=n;i++){
+    for(int j=1;j<=n;j++){
+      if(d[i][j]>=INF/2) cout << "INF ";
+      else cout << d[i][j] << " ";
+    }
+    cout << "\n";
+  }
+}`,
+
+loang: String.raw`// Loang (Flood fill) bằng BFS trên lưới 0/1 (4 hướng)
+// Output: số vùng + size từng vùng (tăng dần)
+#include <bits/stdc++.h>
+using namespace std;
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,m; cin>>n>>m;
+  vector<vector<int>> a(n, vector<int>(m));
+  for(int i=0;i<n;i++) for(int j=0;j<m;j++) cin>>a[i][j];
+
+  vector<vector<int>> vis(n, vector<int>(m,0));
+  int dr[4]={0,0,1,-1}, dc[4]={1,-1,0,0};
+
+  auto bfs = [&](int sr, int sc){
+    queue<pair<int,int>> q;
+    q.push({sr,sc});
+    vis[sr][sc]=1;
+    int cnt=0;
+    while(!q.empty()){
+      auto [r,c]=q.front(); q.pop();
+      cnt++;
+      for(int k=0;k<4;k++){
+        int nr=r+dr[k], nc=c+dc[k];
+        if(nr<0||nr>=n||nc<0||nc>=m) continue;
+        if(a[nr][nc]==1 && !vis[nr][nc]){
+          vis[nr][nc]=1;
+          q.push({nr,nc});
+        }
+      }
+    }
+    return cnt;
+  };
+
+  vector<int> sizes;
+  for(int i=0;i<n;i++)
+    for(int j=0;j<m;j++)
+      if(a[i][j]==1 && !vis[i][j])
+        sizes.push_back(bfs(i,j));
+
+  sort(sizes.begin(), sizes.end());
+  cout << sizes.size() << "\n";
+  for(int x: sizes) cout << x << " ";
+  cout << "\n";
+}`,
+
+prim: String.raw`// Prim MST (đồ thị vô hướng có trọng số)
+// O((n+m) log n)
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+const ll INF = (ll)4e18;
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,m; cin>>n>>m;
+  vector<vector<pair<int,int>>> g(n+1);
+  for(int i=0;i<m;i++){
+    int u,v,w; cin>>u>>v>>w;
+    g[u].push_back({v,w});
+    g[v].push_back({u,w});
+  }
+
+  int s=1;
+  vector<ll> dist(n+1, INF);
+  vector<int> used(n+1,0);
+
+  priority_queue<pair<ll,int>, vector<pair<ll,int>>, greater<pair<ll,int>>> pq;
+  dist[s]=0;
+  pq.push({0,s});
+
+  ll total=0;
+  int cnt=0;
+  while(!pq.empty()){
+    auto [d,u]=pq.top(); pq.pop();
+    if(used[u]) continue;
+    used[u]=1;
+    total += d;
+    cnt++;
+    for(auto [v,w]: g[u]){
+      if(!used[v] && w < dist[v]){
+        dist[v]=w;
+        pq.push({dist[v], v});
+      }
+    }
+  }
+
+  if(cnt!=n) cout << "Graph not connected\n";
+  else cout << "MST weight = " << total << "\n";
+}`,
+
+kruskal: String.raw`// Kruskal MST + DSU
+// O(m log m)
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+
+struct DSU{
+  vector<int> p, sz;
+  DSU(int n=0){ init(n); }
+  void init(int n){
+    p.resize(n+1);
+    sz.assign(n+1,1);
+    iota(p.begin(), p.end(), 0);
+  }
+  int find(int x){ return p[x]==x?x:p[x]=find(p[x]); }
+  bool unite(int a,int b){
+    a=find(a); b=find(b);
+    if(a==b) return false;
+    if(sz[a]<sz[b]) swap(a,b);
+    p[b]=a; sz[a]+=sz[b];
+    return true;
+  }
+};
+
+struct Edge{ int u,v,w; };
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,m; cin>>n>>m;
+  vector<Edge> e(m);
+  for(int i=0;i<m;i++) cin>>e[i].u>>e[i].v>>e[i].w;
+  sort(e.begin(), e.end(), [](const Edge& a, const Edge& b){ return a.w < b.w; });
+
+  DSU dsu(n);
+  ll total=0;
+  int cnt=0;
+  for(auto &ed: e){
+    if(dsu.unite(ed.u, ed.v)){
+      total += ed.w;
+      cnt++;
+      if(cnt==n-1) break;
+    }
+  }
+  if(cnt!=n-1) cout << "Graph not connected\n";
+  else cout << "MST weight = " << total << "\n";
+}`,
+
+scc: String.raw`// SCC Kosaraju (O(n+m))
+#include <bits/stdc++.h>
+using namespace std;
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,m; cin>>n>>m;
+  vector<vector<int>> g(n+1), rg(n+1);
+  for(int i=0;i<m;i++){
+    int u,v; cin>>u>>v;
+    g[u].push_back(v);
+    rg[v].push_back(u);
+  }
+
+  vector<int> vis(n+1,0), order;
+  function<void(int)> dfs1 = [&](int u){
+    vis[u]=1;
+    for(int v: g[u]) if(!vis[v]) dfs1(v);
+    order.push_back(u);
+  };
+
+  for(int i=1;i<=n;i++) if(!vis[i]) dfs1(i);
+
+  vector<int> comp(n+1,0);
+  int cid=0;
+  function<void(int)> dfs2 = [&](int u){
+    comp[u]=cid;
+    for(int v: rg[u]) if(!comp[v]) dfs2(v);
+  };
+
+  reverse(order.begin(), order.end());
+  for(int u: order){
+    if(!comp[u]){
+      cid++;
+      dfs2(u);
+    }
+  }
+
+  cout<<cid<<"\n";
+  for(int i=1;i<=n;i++) cout<<comp[i]<<" \n"[i==n];
+}`,
+
+bridge: String.raw`// Cầu/Khớp (Tarjan tin/low) - đồ thị vô hướng O(n+m)
+#include <bits/stdc++.h>
+using namespace std;
+
+int n,m,timer=0;
+vector<vector<int>> g;
+vector<int> tin, low, vis;
+vector<pair<int,int>> bridges;
+vector<int> isArt;
+
+void dfs(int u, int p){
+  vis[u]=1;
+  tin[u]=low[u]=++timer;
+  int child=0;
+
+  for(int v: g[u]){
+    if(v==p) continue;
+    if(vis[v]){
+      low[u]=min(low[u], tin[v]);
+    }else{
+      dfs(v,u);
+      low[u]=min(low[u], low[v]);
+
+      if(low[v] > tin[u]) bridges.push_back({u,v});          // cầu
+      if(p!=0 && low[v] >= tin[u]) isArt[u]=1;              // khớp (không phải gốc)
+      child++;
+    }
+  }
+  if(p==0 && child>=2) isArt[u]=1; // gốc là khớp nếu >=2 con
+}
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  cin>>n>>m;
+  g.assign(n+1,{});
+  for(int i=0;i<m;i++){
+    int u,v; cin>>u>>v;
+    g[u].push_back(v);
+    g[v].push_back(u);
+  }
+  tin.assign(n+1,0);
+  low.assign(n+1,0);
+  vis.assign(n+1,0);
+  isArt.assign(n+1,0);
+
+  for(int i=1;i<=n;i++) if(!vis[i]) dfs(i,0);
+
+  cout<<"bridges="<<bridges.size()<<"\n";
+  for(auto [u,v]: bridges) cout<<u<<" "<<v<<"\n";
+
+  cout<<"articulation:\n";
+  for(int i=1;i<=n;i++) if(isArt[i]) cout<<i<<" ";
+  cout<<"\n";
+}`,
+
+lca: String.raw`// LCA (Binary lifting) - n up to 2e5
+#include <bits/stdc++.h>
+using namespace std;
+
+const int MAXN = 200000;
+const int LOG = 20;
+int n;
+vector<int> g[MAXN+5];
+int up[LOG][MAXN+5], depthArr[MAXN+5];
+
+void dfs(int u, int p){
+  up[0][u]=p;
+  for(int k=1;k<LOG;k++) up[k][u] = up[k-1][u] ? up[k-1][ up[k-1][u] ] : 0;
+  for(int v: g[u]) if(v!=p){
+    depthArr[v]=depthArr[u]+1;
+    dfs(v,u);
+  }
+}
+
+int lift(int u, int d){
+  for(int k=0;k<LOG;k++) if(d&(1<<k)) u=up[k][u];
+  return u;
+}
+
+int lca(int a,int b){
+  if(depthArr[a]<depthArr[b]) swap(a,b);
+  a=lift(a, depthArr[a]-depthArr[b]);
+  if(a==b) return a;
+  for(int k=LOG-1;k>=0;k--){
+    if(up[k][a]!=up[k][b]){
+      a=up[k][a]; b=up[k][b];
+    }
+  }
+  return up[0][a];
+}
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  cin>>n;
+  for(int i=0;i<n-1;i++){
+    int u,v; cin>>u>>v;
+    g[u].push_back(v); g[v].push_back(u);
+  }
+  int root=1;
+  depthArr[root]=0;
+  dfs(root,0);
+
+  int q; cin>>q;
+  while(q--){
+    int u,v; cin>>u>>v;
+    cout<<lca(u,v)<<"\n";
+  }
+}`,
+
+seg: String.raw`// Segment Tree: range minimum query (RMQ) + point update (O(log n))
+#include <bits/stdc++.h>
+using namespace std;
+
+struct SegTree{
+  int n;
+  vector<long long> st;
+  SegTree(int n=0){init(n);}
+  void init(int n_){
+    n=n_;
+    st.assign(4*n+5, (long long)4e18);
+  }
+  void build(int p, int l, int r, const vector<long long>& a){
+    if(l==r){ st[p]=a[l]; return; }
+    int m=(l+r)>>1;
+    build(p<<1,l,m,a);
+    build(p<<1|1,m+1,r,a);
+    st[p]=min(st[p<<1], st[p<<1|1]);
+  }
+  long long query(int p,int l,int r,int i,int j){
+    if(j<l||r<i) return (long long)4e18;
+    if(i<=l&&r<=j) return st[p];
+    int m=(l+r)>>1;
+    return min(query(p<<1,l,m,i,j), query(p<<1|1,m+1,r,i,j));
+  }
+  void update(int p,int l,int r,int idx,long long val){
+    if(l==r){ st[p]=val; return; }
+    int m=(l+r)>>1;
+    if(idx<=m) update(p<<1,l,m,idx,val);
+    else update(p<<1|1,m+1,r,idx,val);
+    st[p]=min(st[p<<1], st[p<<1|1]);
+  }
+};
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n; cin>>n;
+  vector<long long> a(n+1);
+  for(int i=1;i<=n;i++) cin>>a[i];
+
+  SegTree st(n);
+  st.build(1,1,n,a);
+
+  int q; cin>>q;
+  while(q--){
+    char type; cin>>type;
+    if(type=='Q'){
+      int l,r; cin>>l>>r;
+      cout << st.query(1,1,n,l,r) << "\n";
+    }else{ // U
+      int idx; long long val; cin>>idx>>val;
+      st.update(1,1,n,idx,val);
+    }
+  }
+}`,
+
+bit: String.raw`// Fenwick Tree (BIT): point update, prefix sum, range sum
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+
+struct BIT{
+  int n;
+  vector<ll> f;
+  BIT(int n=0){init(n);}
+  void init(int n_){ n=n_; f.assign(n+1,0); }
+  void add(int i, ll v){ for(; i<=n; i+= i&-i) f[i]+=v; }
+  ll sumPrefix(int i){ ll s=0; for(; i>0; i-= i&-i) s+=f[i]; return s; }
+  ll sumRange(int l,int r){ return sumPrefix(r)-sumPrefix(l-1); }
+};
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n; cin>>n;
+  BIT bit(n);
+  for(int i=1;i<=n;i++){
+    ll x; cin>>x;
+    bit.add(i,x);
+  }
+  int q; cin>>q;
+  while(q--){
+    char type; cin>>type;
+    if(type=='U'){
+      int idx; ll delta; cin>>idx>>delta;
+      bit.add(idx, delta); // chú ý: delta
+    }else{ // Q
+      int l,r; cin>>l>>r;
+      cout << bit.sumRange(l,r) << "\n";
+    }
+  }
+}`,
+
+trie: String.raw`// Trie: đếm số xâu trong tập nhận s là tiền tố (prefix count)
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Node{
+  int cnt=0;
+  int nxt[26];
+  Node(){ fill(nxt, nxt+26, -1); }
+};
+
+struct Trie{
+  vector<Node> t;
+  Trie(){ t.push_back(Node()); } // root=0
+  void insert(const string& s){
+    int cur=0;
+    for(char ch: s){
+      int c=ch-'a';
+      if(t[cur].nxt[c]==-1){
+        t[cur].nxt[c]=(int)t.size();
+        t.push_back(Node());
+      }
+      cur=t[cur].nxt[c];
+      t[cur].cnt++;
+    }
+  }
+  int queryPrefix(const string& s){
+    int cur=0;
+    for(char ch: s){
+      int c=ch-'a';
+      if(t[cur].nxt[c]==-1) return 0;
+      cur=t[cur].nxt[c];
+    }
+    return t[cur].cnt;
+  }
+};
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n; cin>>n;
+  Trie tr;
+  for(int i=0;i<n;i++){
+    string s; cin>>s;
+    tr.insert(s);
+  }
+  int q; cin>>q;
+  while(q--){
+    string s; cin>>s;
+    cout << tr.queryPrefix(s) << "\n";
+  }
+}`
+,
+topo: String.raw`// Topological Sort (Kahn) + phát hiện chu trình
+// Input: n m, edges u v (u -> v)
+// Output: topo order hoặc "NO TOPO" nếu có chu trình
+#include <bits/stdc++.h>
+using namespace std;
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,m; cin>>n>>m;
+  vector<vector<int>> g(n+1);
+  vector<int> indeg(n+1,0);
+  for(int i=0;i<m;i++){
+    int u,v; cin>>u>>v;
+    g[u].push_back(v);
+    indeg[v]++;
+  }
+
+  queue<int> q;
+  for(int i=1;i<=n;i++) if(indeg[i]==0) q.push(i);
+
+  vector<int> topo;
+  while(!q.empty()){
+    int u=q.front(); q.pop();
+    topo.push_back(u);
+    for(int v: g[u]) if(--indeg[v]==0) q.push(v);
+  }
+
+  if((int)topo.size()!=n){
+    cout<<"NO TOPO\n";
+    return 0;
+  }
+  for(int x: topo) cout<<x<<" ";
+  cout<<"\n";
+}`,
+
+euler: String.raw`// Euler Tour (tin/tout) để biến subtree thành đoạn [tin[u], tout[u]]
+// Dùng cho query/update subtree với BIT/SegTree.
+#include <bits/stdc++.h>
+using namespace std;
+
+int n;
+vector<vector<int>> g;
+vector<int> tin, tout, euler, parentArr, depthArr;
+int timer=0;
+
+void dfs(int u, int p){
+  parentArr[u]=p;
+  tin[u]=++timer;
+  euler[timer]=u;
+  for(int v: g[u]) if(v!=p){
+    depthArr[v]=depthArr[u]+1;
+    dfs(v,u);
+  }
+  tout[u]=timer;
+}
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  cin>>n;
+  g.assign(n+1,{});
+  for(int i=0;i<n-1;i++){
+    int u,v; cin>>u>>v;
+    g[u].push_back(v); g[v].push_back(u);
+  }
+  tin.assign(n+1,0);
+  tout.assign(n+1,0);
+  parentArr.assign(n+1,0);
+  depthArr.assign(n+1,0);
+  euler.assign(n+1,0);
+
+  int root=1;
+  depthArr[root]=0;
+  dfs(root,0);
+
+  for(int u=1;u<=n;u++){
+    cout<<"u="<<u<<" tin="<<tin[u]<<" tout="<<tout[u]<<"\n";
+  }
+
+  // subtree(u) là euler[tin[u]..tout[u]]
+}`,
+
+dsuroll: String.raw`// DSU Rollback (không path compression) + rollback
+// Dùng trong offline dynamic connectivity / segment tree over time.
+#include <bits/stdc++.h>
+using namespace std;
+
+struct DSURollback{
+  int n;
+  vector<int> p, sz;
+  vector<pair<int,int>> st; // (b, sz_a_before) hoặc (-1,-1) nếu union fail
+  int comps;
+
+  DSURollback(int n=0){ init(n); }
+  void init(int n_){
+    n=n_;
+    p.resize(n+1);
+    sz.assign(n+1,1);
+    iota(p.begin(), p.end(), 0);
+    st.clear();
+    comps=n;
+  }
+
+  int find(int x){
+    while(p[x]!=x) x=p[x];
+    return x;
+  }
+
+  bool unite(int a,int b){
+    a=find(a); b=find(b);
+    if(a==b){ st.push_back({-1,-1}); return false; }
+    if(sz[a]<sz[b]) swap(a,b);
+    st.push_back({b, sz[a]});
+    p[b]=a;
+    sz[a]+=sz[b];
+    comps--;
+    return true;
+  }
+
+  int snapshot() const { return (int)st.size(); }
+
+  void rollback(int snap){
+    while((int)st.size()>snap){
+      auto [b, szA]=st.back(); st.pop_back();
+      if(b==-1) continue;
+      int a=p[b];
+      p[b]=b;
+      sz[a]=szA;
+      comps++;
+    }
+  }
+};
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,q; cin>>n>>q;
+  DSURollback dsu(n);
+
+  vector<int> snaps;
+  snaps.push_back(dsu.snapshot()); // snap 0
+
+  while(q--){
+    int type; cin>>type;
+    if(type==1){
+      int u,v; cin>>u>>v;
+      dsu.unite(u,v);
+    }else if(type==2){
+      int id; cin>>id;
+      dsu.rollback(snaps[id]);
+    }else{
+      int u,v; cin>>u>>v;
+      cout << (dsu.find(u)==dsu.find(v) ? "YES":"NO") << "\n";
+    }
+    snaps.push_back(dsu.snapshot());
+  }
+}`,
+
+mos: String.raw`// Mo's Algorithm: offline range queries trên mảng tĩnh
+// Demo: đếm số phần tử khác nhau (distinct count) trong đoạn [L,R].
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Query{
+  int l,r,idx,block;
+};
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n; cin>>n;
+  vector<int> a(n+1);
+  for(int i=1;i<=n;i++) cin>>a[i];
+
+  int q; cin>>q;
+  int B = max(1, (int)sqrt(n));
+  vector<Query> qs(q);
+  for(int i=0;i<q;i++){
+    int l,r; cin>>l>>r;
+    qs[i]={l,r,i,l/B};
+  }
+
+  sort(qs.begin(), qs.end(), [&](const Query& A, const Query& Bq){
+    if(A.block!=Bq.block) return A.block < Bq.block;
+    if(A.block&1) return A.r > Bq.r;
+    return A.r < Bq.r;
+  });
+
+  // coordinate compress
+  vector<int> vals(a.begin()+1, a.end());
+  sort(vals.begin(), vals.end());
+  vals.erase(unique(vals.begin(), vals.end()), vals.end());
+  for(int i=1;i<=n;i++){
+    a[i] = (int)(lower_bound(vals.begin(), vals.end(), a[i]) - vals.begin());
+  }
+
+  vector<int> freq(vals.size(),0);
+  int distinct=0;
+
+  auto add = [&](int pos){
+    int x=a[pos];
+    if(freq[x]++==0) distinct++;
+  };
+  auto remove = [&](int pos){
+    int x=a[pos];
+    if(--freq[x]==0) distinct--;
+  };
+
+  int curL=1, curR=0;
+  vector<int> ans(q);
+
+  for(auto &qq: qs){
+    while(curL>qq.l) add(--curL);
+    while(curR<qq.r) add(++curR);
+    while(curL<qq.l) remove(curL++);
+    while(curR>qq.r) remove(curR--);
+    ans[qq.idx]=distinct;
+  }
+
+  for(int i=0;i<q;i++) cout<<ans[i]<<"\n";
+}`,
+
+hld: String.raw`// HLD (Heavy-Light Decomposition) + Segment Tree (sum) trên path u-v
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+
+struct SegTree{
+  int n;
+  vector<ll> st;
+  SegTree(int n=0){init(n);}
+  void init(int n_){
+    n=n_;
+    st.assign(4*n+5,0);
+  }
+  void build(int p,int l,int r, const vector<ll>& a){
+    if(l==r){ st[p]=a[l]; return; }
+    int m=(l+r)>>1;
+    build(p<<1,l,m,a);
+    build(p<<1|1,m+1,r,a);
+    st[p]=st[p<<1]+st[p<<1|1];
+  }
+  void update(int p,int l,int r,int idx,ll val){
+    if(l==r){ st[p]=val; return; }
+    int m=(l+r)>>1;
+    if(idx<=m) update(p<<1,l,m,idx,val);
+    else update(p<<1|1,m+1,r,idx,val);
+    st[p]=st[p<<1]+st[p<<1|1];
+  }
+  ll query(int p,int l,int r,int i,int j){
+    if(j<l||r<i) return 0;
+    if(i<=l&&r<=j) return st[p];
+    int m=(l+r)>>1;
+    return query(p<<1,l,m,i,j)+query(p<<1|1,m+1,r,i,j);
+  }
+};
+
+int n;
+vector<vector<int>> g;
+vector<int> parentArr, depthArr, heavy, head, pos, sz;
+int curPos=0;
+
+int dfs1(int u,int p){
+  parentArr[u]=p;
+  sz[u]=1;
+  int maxSub=0;
+  for(int v: g[u]) if(v!=p){
+    depthArr[v]=depthArr[u]+1;
+    int sub=dfs1(v,u);
+    sz[u]+=sub;
+    if(sub>maxSub){
+      maxSub=sub;
+      heavy[u]=v;
+    }
+  }
+  return sz[u];
+}
+
+void dfs2(int u,int h){
+  head[u]=h;
+  pos[u]=++curPos;
+  if(heavy[u]!=-1) dfs2(heavy[u], h);
+  for(int v: g[u]) if(v!=parentArr[u] && v!=heavy[u]) dfs2(v, v);
+}
+
+ll queryPath(int a,int b, SegTree& st){
+  ll res=0;
+  while(head[a]!=head[b]){
+    if(depthArr[head[a]] < depthArr[head[b]]) swap(a,b);
+    int ha=head[a];
+    res += st.query(1,1,n, pos[ha], pos[a]);
+    a = parentArr[ha];
+  }
+  if(depthArr[a] > depthArr[b]) swap(a,b);
+  res += st.query(1,1,n, pos[a], pos[b]);
+  return res;
+}
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  cin>>n;
+  g.assign(n+1,{});
+  for(int i=0;i<n-1;i++){
+    int u,v; cin>>u>>v;
+    g[u].push_back(v); g[v].push_back(u);
+  }
+  vector<ll> val(n+1,0);
+  for(int i=1;i<=n;i++) cin>>val[i]; // giá trị node
+
+  parentArr.assign(n+1,0);
+  depthArr.assign(n+1,0);
+  heavy.assign(n+1,-1);
+  head.assign(n+1,0);
+  pos.assign(n+1,0);
+  sz.assign(n+1,0);
+
+  int root=1;
+  depthArr[root]=0;
+  dfs1(root,0);
+  dfs2(root,root);
+
+  vector<ll> base(n+1,0);
+  for(int u=1;u<=n;u++) base[pos[u]] = val[u];
+
+  SegTree st(n);
+  st.build(1,1,n,base);
+
+  int q; cin>>q;
+  while(q--){
+    int type; cin>>type;
+    if(type==1){
+      int u; ll newVal; cin>>u>>newVal;
+      st.update(1,1,n, pos[u], newVal);
+    }else{
+      int u,v; cin>>u>>v;
+      cout << queryPath(u,v, st) << "\n";
+    }
+  }
+}`
+
+};
+
+const cppBox = document.getElementById("cppBox");
+const snippetSelect = document.getElementById("snippetSelect");
+function updateSnippet(){ cppBox.textContent = SNIPPETS[snippetSelect.value] || ""; }
+snippetSelect.addEventListener("change", updateSnippet);
+updateSnippet();
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  try{
+    await navigator.clipboard.writeText(cppBox.textContent);
+    const btn = document.getElementById("copyBtn");
+    const old = btn.textContent;
+    btn.textContent = "✅ Đã copy";
+    setTimeout(()=>btn.textContent=old, 900);
+  }catch(e){
+    alert("Trình duyệt không cho copy tự động. Bạn bôi đen và Ctrl+C nhé.");
+  }
+});
+</script>
+</body>
+</html>

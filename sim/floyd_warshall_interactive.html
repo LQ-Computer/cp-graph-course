@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Floyd–Warshall Interactive (Directed/Undirected)</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#101a33; --text:#e8ecff; --muted:#a9b3d6;
+      --accent:#7aa2ff; --good:#2ee59d; --warn:#ffcc66; --bad:#ff6b6b;
+      --edge:#9aa7d6; --edgeHi:#ffcc66; --edgePath:#2ee59d;
+      --node:#1b2b57; --nodeBorder:#6f86ff;
+      --shadow:0 12px 30px rgba(0,0,0,.35); --radius:16px;
+      --stroke:rgba(255,255,255,.08);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);color:var(--text);
+      background: radial-gradient(1200px 600px at 20% 0%, #172a63 0%, var(--bg) 55%) fixed;}
+    header{max-width:1300px;margin:0 auto;padding:20px 18px 10px}
+    h1{margin:0 0 6px;font-size:20px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.4}
+
+    .layout{max-width:1300px;margin:0 auto;padding:12px 18px 22px;display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .card h2{margin:0;font-size:14px;padding:12px 14px;border-bottom:1px solid var(--stroke);background:rgba(0,0,0,.12);color:#dfe6ff}
+    .content{padding:12px 14px}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button{
+      cursor:pointer;border:1px solid rgba(255,255,255,.12);
+      background: rgba(122,162,255,.14); color:var(--text);
+      border-radius:12px;padding:8px 10px;font-weight:800;font-size:13px;
+      transition:transform .06s ease, background .2s ease; white-space:nowrap;
+    }
+    button:hover{background:rgba(122,162,255,.22)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.08)}
+    button.secondary:hover{background:rgba(255,255,255,.12)}
+    button.danger{background:rgba(255,107,107,.16)}
+    button.danger:hover{background:rgba(255,107,107,.22)}
+    button.good{background:rgba(46,229,157,.16)}
+    button.good:hover{background:rgba(46,229,157,.24)}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      font-size:12px;color:#dfe6ff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.18)}
+    .mono{font-family:var(--mono);font-size:12px}
+    input[type="number"]{
+      width:70px;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);color:var(--text);font-family:var(--mono);
+    }
+    input[type="checkbox"], input[type="radio"]{transform:translateY(1px)}
+    .speed{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+    input[type="range"]{width:170px}
+
+    textarea{
+      width:100%;min-height:175px;resize:vertical;padding:10px 12px;border-radius:12px;
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);
+      color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.45;outline:none;
+    }
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .box{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;
+      max-height:260px;overflow:auto;
+    }
+    pre{margin:0;padding:12px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid var(--stroke);
+      overflow:auto;max-height:360px;font-family:var(--mono);font-size:12px;line-height:1.45}
+    .err{color:var(--bad);font-size:12px;margin-top:8px;display:none}
+
+    .svgWrap{padding:12px 14px 14px}
+    svg{width:100%;height:auto;display:block;background:rgba(0,0,0,.10);border:1px solid var(--stroke);border-radius:14px}
+
+    .edge{stroke:var(--edge);stroke-width:3.5;opacity:.85;transition:stroke .2s,opacity .2s,stroke-width .2s}
+    .edge.highlight{stroke:var(--edgeHi);opacity:1}
+    .edge.path{stroke:var(--edgePath);opacity:1;stroke-width:6}
+
+    .wLabel{fill:#eef2ff;font-size:11px;font-family:var(--mono);opacity:.95}
+
+    .nodeCircle{fill:var(--node);stroke:var(--nodeBorder);stroke-width:3;transition:stroke .2s,filter .2s,opacity .2s}
+    .nodeCircle.active{stroke:var(--warn);filter:drop-shadow(0 0 10px rgba(255,204,102,.18))}
+    .nodeLabel{fill:#f2f5ff;font-weight:900;font-size:13px;font-family:var(--mono)}
+    .nodeMeta{fill:#cfd7ff;font-size:11px;font-family:var(--mono);opacity:.95}
+
+    table{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid var(--stroke);
+      background:rgba(0,0,0,.12);font-size:12px}
+    th,td{padding:8px;border-bottom:1px solid var(--stroke);text-align:center}
+    th{color:#cfd7ff;background:rgba(255,255,255,.05)}
+    tr:last-child td{border-bottom:none}
+
+    .cellHi{outline:2px solid rgba(255,204,102,.7); outline-offset:-2px; background:rgba(255,204,102,.08)}
+    .cellUpd{outline:2px solid rgba(46,229,157,.7); outline-offset:-2px; background:rgba(46,229,157,.08)}
+
+    .formula{
+      background:rgba(0,0,0,.18);border:1px solid var(--stroke);border-radius:12px;
+      padding:10px 12px;font-family:var(--mono);font-size:12px;line-height:1.45;
+    }
+    .formula b{color:#f2f5ff}
+    .tagOk{color:var(--good);font-weight:900}
+    .tagNo{color:var(--bad);font-weight:900}
+    .tagSkip{color:var(--muted);font-weight:900}
+
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .grid2,.grid3{grid-template-columns:1fr}
+      .speed{margin-left:0;width:100%;justify-content:space-between}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Floyd–Warshall Interactive (Directed / Undirected)</h1>
+  <div class="sub">
+    Mô phỏng Floyd–Warshall: <span class="mono">dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])</span>.
+    Hiển thị ma trận <b>dist</b> và <b>next</b>. Thêm bảng công thức (3 ô dist) và chế độ chạy theo lớp <b>k</b>.
+  </div>
+</header>
+
+<div class="layout">
+  <!-- LEFT -->
+  <section class="card">
+    <h2>Hình động & ma trận</h2>
+    <div class="svgWrap">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnPlay">▶ Play</button>
+        <button id="btnStep" class="secondary">⏭ Step</button>
+        <button id="btnReset" class="danger">↺ Reset</button>
+
+        <button id="btnAuto" class="good">🎓 Auto Demo</button>
+        <button id="btnCont" class="secondary" disabled>▶ Continue</button>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="pauseOnUpdate" checked />
+          Pause on Update
+        </label>
+
+        <label class="badge" style="gap:8px">
+          <input type="checkbox" id="kOnly" />
+          Chỉ chạy theo lớp k
+        </label>
+
+        <div class="speed">
+          <span>Tốc độ</span>
+          <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1.1" />
+          <span class="badge"><span class="dot"></span><span id="speedText">1.1x</span></span>
+        </div>
+      </div>
+
+      <svg id="svg" viewBox="0 0 900 520">
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="rgba(154,167,214,.95)"></path>
+          </marker>
+          <marker id="arrowHi" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="rgba(255,204,102,.98)"></path>
+          </marker>
+          <marker id="arrowPath" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="rgba(46,229,157,.98)"></path>
+          </marker>
+        </defs>
+        <g id="edges"></g>
+        <g id="weights"></g>
+        <g id="nodes"></g>
+      </svg>
+
+      <div class="row" style="margin-top:10px">
+        <span class="badge"><span class="dot"></span> k=<b id="kLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:var(--warn);box-shadow:0 0 0 3px rgba(255,204,102,.18)"></span>
+          i=<b id="iLabel">—</b>, j=<b id="jLabel">—</b></span>
+        <span class="badge"><span class="dot" style="background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.12)"></span>
+          step <b id="stepIdx">0</b>/<b id="stepTotal">0</b></span>
+        <span class="badge"><span class="dot" style="background:var(--good);box-shadow:0 0 0 3px rgba(46,229,157,.18)"></span>
+          action <b id="actionLabel">—</b></span>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <!-- NEW: formula panel -->
+      <div class="formula" id="formulaBox"></div>
+
+      <div style="height:12px"></div>
+
+      <div class="grid2">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">dist matrix</div>
+          <div id="distWrap"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">next matrix (first step)</div>
+          <div id="nextWrap"></div>
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+      <div class="grid2">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Log</div>
+          <div id="log" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Path a→b</div>
+          <div id="pathBox" class="box"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="card">
+    <h2>Input/Output + C++ code</h2>
+    <div class="content">
+      <div class="row" style="margin-bottom:10px">
+        <button id="btnRun">⚙ Run</button>
+        <button id="btnLoadSample" class="secondary">📥 Load sample</button>
+
+        <span class="badge"><span class="dot"></span>
+          Format: <span class="mono">n m</span> + m dòng <span class="mono">u v w</span>
+        </span>
+
+        <label class="badge" style="gap:8px">
+          <input type="radio" name="dir" id="dirDirected" checked />
+          Có hướng
+        </label>
+        <label class="badge" style="gap:8px">
+          <input type="radio" name="dir" id="dirUndirected" />
+          Vô hướng
+        </label>
+
+        <label class="badge" style="gap:8px">
+          sort adj
+          <input type="checkbox" id="sortAdj" checked />
+        </label>
+
+        <label class="badge" style="gap:8px">
+          a =
+          <input type="number" id="aNode" min="1" value="1" />
+        </label>
+
+        <label class="badge" style="gap:8px">
+          b =
+          <input type="number" id="bNode" min="1" value="5" />
+        </label>
+      </div>
+
+      <textarea id="inputArea" spellcheck="false"></textarea>
+      <div id="err" class="err"></div>
+
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">Output</div>
+          <div id="outputBox" class="box"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin:0 0 6px">C++ reference</div>
+          <pre id="cpp"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ---------- C++ reference ---------- */
+document.getElementById('cpp').textContent =
+`#include <bits/stdc++.h>
+using namespace std;
+const long long INF = (1LL<<60);
+
+int main(){
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n,m; cin>>n>>m;
+  vector<vector<long long>> dist(n+1, vector<long long>(n+1, INF));
+  vector<vector<int>> nxt(n+1, vector<int>(n+1, -1));
+
+  for(int i=1;i<=n;i++){ dist[i][i]=0; nxt[i][i]=i; }
+
+  for(int i=0;i<m;i++){
+    int u,v; long long w; cin>>u>>v>>w;
+    if(w < dist[u][v]){
+      dist[u][v]=w;
+      nxt[u][v]=v;
+    }
+    // undirected:
+    // if(w < dist[v][u]){ dist[v][u]=w; nxt[v][u]=u; }
+  }
+
+  for(int k=1;k<=n;k++){
+    for(int i=1;i<=n;i++){
+      for(int j=1;j<=n;j++){
+        if(dist[i][k]==INF || dist[k][j]==INF) continue;
+        long long nd = dist[i][k] + dist[k][j];
+        if(nd < dist[i][j]){
+          dist[i][j]=nd;
+          nxt[i][j]=nxt[i][k];
+        }
+      }
+    }
+  }
+}`;
+
+/* ---------- Sample ---------- */
+const SAMPLE =
+`5 7
+1 2 3
+2 3 4
+1 3 10
+3 4 -2
+4 5 2
+2 5 15
+1 5 20`;
+
+document.getElementById('inputArea').value = SAMPLE;
+
+/* ---------- SVG helpers ---------- */
+const svgEdges = document.getElementById('edges');
+const svgWeights = document.getElementById('weights');
+const svgNodes = document.getElementById('nodes');
+
+const edgeKey=(u,v)=>`${u}-${v}`;
+const edgeId=(u,v)=>`e-${u}-${v}`;
+const nodeId=(u)=>`n-${u}`;
+
+let model=null;      // {n, edges: [{u,v,w}], directed, pos, visEdges}
+let actions=[];
+let idx=0;
+
+// NEW: indices for k-only stepping (k_end snapshots)
+let kOnlyIndices=[];
+let kOnlyPos=0;
+
+let playing=false;
+let timerPlay=null;
+
+let lectureMode=false;
+let waitingContinue=false;
+let continueRequested=false;
+
+const INF = 10**15;
+
+function showErr(msg){
+  const el=document.getElementById('err');
+  if(!msg){ el.style.display="none"; el.textContent=""; return; }
+  el.style.display="block"; el.textContent=msg;
+}
+function layoutCircle(n){
+  const cx=450, cy=260;
+  const R=Math.max(150, Math.min(235, 60*n));
+  const pos={};
+  for(let i=1;i<=n;i++){
+    const ang=(-Math.PI/2) + (2*Math.PI*(i-1)/n);
+    pos[i]=[cx+R*Math.cos(ang), cy+R*Math.sin(ang)];
+  }
+  return pos;
+}
+
+/* ---------- Parse input ---------- */
+function parseInput(text){
+  const lines=text.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>0 && !s.startsWith("#"));
+  if(!lines.length) throw new Error("Input rỗng.");
+  const first=lines[0].split(/\s+/).map(Number);
+  if(first.length<2 || first.some(Number.isNaN)) throw new Error("Dòng đầu: n m");
+  const [n,m]=first;
+  if(n<=0 || m<0) throw new Error("n>0, m>=0");
+  if(lines.length!==m+1) throw new Error(`Cần ${m} dòng cạnh, nhưng có ${lines.length-1}.`);
+
+  const directed = document.getElementById('dirDirected').checked;
+  const edges=[];
+  for(let i=1;i<=m;i++){
+    const parts=lines[i].split(/\s+/).map(Number);
+    if(parts.length<3 || parts.some(Number.isNaN)) throw new Error(`Dòng ${i+1}: u v w`);
+    let [u,v,w]=parts;
+    if(u<1||u>n||v<1||v>n) throw new Error(`Dòng ${i+1}: u,v trong [1..n]`);
+    edges.push({u,v,w});
+  }
+  return {n, edges, directed};
+}
+
+/* ---------- Init matrices ---------- */
+function initMatrices(){
+  const n=model.n;
+  const dist=Array.from({length:n+1}, ()=>Array(n+1).fill(INF));
+  const nxt =Array.from({length:n+1}, ()=>Array(n+1).fill(-1));
+  for(let i=1;i<=n;i++){ dist[i][i]=0; nxt[i][i]=i; }
+
+  for(const e of model.edges){
+    const {u,v,w}=e;
+    if(w < dist[u][v]){ dist[u][v]=w; nxt[u][v]=v; }
+    if(!model.directed && u!==v){
+      if(w < dist[v][u]){ dist[v][u]=w; nxt[v][u]=u; }
+    }
+  }
+  return {dist,nxt};
+}
+
+/* ---------- Floyd actions (with formula data + k_end snapshots) ---------- */
+function floydActions(){
+  const n=model.n;
+  const {dist,nxt}=initMatrices();
+
+  const acts=[];
+  const snap=(type, extra={})=>{
+    acts.push({
+      type,
+      k:extra.k ?? -1, i:extra.i ?? -1, j:extra.j ?? -1,
+      // NEW: formula fields
+      dik: extra.dik, dkj: extra.dkj, dij: extra.dij, nd: extra.nd,
+      updated: extra.updated ?? false,
+      msg: extra.msg || type,
+      dist: dist.map(row=>row.slice()),
+      nxt:  nxt.map(row=>row.slice()),
+    });
+  };
+
+  snap("init",{msg:"Init dist & next matrices."});
+
+  for(let k=1;k<=n;k++){
+    snap("k_start",{k,msg:`k = ${k} (start)`});
+    for(let i=1;i<=n;i++){
+      for(let j=1;j<=n;j++){
+        // compute formula terms for teaching
+        const dik = dist[i][k];
+        const dkj = dist[k][j];
+        const dij = dist[i][j];
+
+        snap("check",{k,i,j,dik,dkj,dij,
+          msg:`Check i=${i}, j=${j} via k=${k}`});
+
+        if(dik>=INF/2 || dkj>=INF/2) continue;
+
+        const nd = dik + dkj;
+        if(nd < dist[i][j]){
+          dist[i][j]=nd;
+          nxt[i][j]=nxt[i][k];
+          snap("update",{k,i,j,dik,dkj,dij,nd,updated:true,
+            msg:`Update dist[${i}][${j}] = dist[${i}][${k}] + dist[${k}][${j}] = ${nd}`});
+        }
+      }
+    }
+    // NEW: snapshot after finishing this k layer
+    snap("k_end",{k,msg:`k = ${k} (end)`});
+  }
+
+  let neg=false;
+  for(let i=1;i<=n;i++) if(dist[i][i] < 0) neg=true;
+  snap("done",{msg: neg ? "Done (NEGATIVE CYCLE detected: some dist[i][i] < 0)" : "Done."});
+  return acts;
+}
+
+/* ---------- Draw graph (undirected draw 1 edge) ---------- */
+function drawGraph(){
+  svgEdges.innerHTML=""; svgWeights.innerHTML=""; svgNodes.innerHTML="";
+  if(!model) return;
+
+  const visEdges=[];
+  if(model.directed){
+    const best=new Map();
+    for(const {u,v,w} of model.edges){
+      const k=edgeKey(u,v);
+      if(!best.has(k) || w < best.get(k)) best.set(k,w);
+    }
+    for(const [k,w] of best.entries()){
+      const [u,v]=k.split("-").map(Number);
+      visEdges.push({u,v,w});
+    }
+  }else{
+    const best=new Map(); // "min-max"
+    for(const {u,v,w} of model.edges){
+      const a=Math.min(u,v), b=Math.max(u,v);
+      const k=edgeKey(a,b);
+      if(!best.has(k) || w < best.get(k).w) best.set(k,{u:a,v:b,w});
+    }
+    for(const e of best.values()) visEdges.push(e);
+  }
+
+  for(const {u,v,w} of visEdges){
+    const [x1,y1]=model.pos[u], [x2,y2]=model.pos[v];
+    const r=22, dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy)||1;
+    const sx=x1+(dx/len)*r, sy=y1+(dy/len)*r;
+    const tx=x2-(dx/len)*r, ty=y2-(dy/len)*r;
+
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+    line.setAttribute("x1",sx); line.setAttribute("y1",sy);
+    line.setAttribute("x2",tx); line.setAttribute("y2",ty);
+    line.setAttribute("class","edge");
+    line.setAttribute("id",edgeId(u,v));
+
+    if(model.directed) line.setAttribute("marker-end","url(#arrow)");
+    else line.removeAttribute("marker-end");
+
+    svgEdges.appendChild(line);
+
+    const mx=(sx+tx)/2, my=(sy+ty)/2;
+    const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x",mx); t.setAttribute("y",my-6);
+    t.setAttribute("text-anchor","middle");
+    t.setAttribute("class","wLabel");
+    t.textContent = w;
+    svgWeights.appendChild(t);
+  }
+
+  for(let u=1;u<=model.n;u++){
+    const [x,y]=model.pos[u];
+    const g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("id",nodeId(u));
+
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",22);
+    c.setAttribute("class","nodeCircle");
+    g.appendChild(c);
+
+    const L=document.createElementNS("http://www.w3.org/2000/svg","text");
+    L.setAttribute("x",x); L.setAttribute("y",y+4);
+    L.setAttribute("text-anchor","middle");
+    L.setAttribute("class","nodeLabel");
+    L.textContent=u;
+    g.appendChild(L);
+
+    const M=document.createElementNS("http://www.w3.org/2000/svg","text");
+    M.setAttribute("x",x); M.setAttribute("y",y+40);
+    M.setAttribute("text-anchor","middle");
+    M.setAttribute("class","nodeMeta");
+    M.textContent=" ";
+    g.appendChild(M);
+
+    svgNodes.appendChild(g);
+  }
+
+  model.visEdges = visEdges;
+}
+
+function clearHighlights(){
+  for(const e of model.visEdges){
+    const el=document.getElementById(edgeId(e.u,e.v));
+    if(!el) continue;
+    el.classList.remove("highlight","path");
+    if(model.directed) el.setAttribute("marker-end","url(#arrow)");
+    else el.removeAttribute("marker-end");
+  }
+  for(let u=1;u<=model.n;u++){
+    document.getElementById(nodeId(u)).querySelector("circle").classList.remove("active");
+  }
+}
+
+function findDrawnEdge(u,v){
+  let el=document.getElementById(edgeId(u,v));
+  if(!el && !model.directed){
+    const a=Math.min(u,v), b=Math.max(u,v);
+    el=document.getElementById(edgeId(a,b));
+  }
+  return el;
+}
+
+/* ---------- Matrices rendering ---------- */
+function formatVal(x){
+  if(x===undefined) return "";
+  if(x>=INF/2) return "∞";
+  return String(x);
+}
+function buildMatrixTable(mat, n, cellClassFn){
+  const table=document.createElement("table");
+  const thead=document.createElement("thead");
+  const trh=document.createElement("tr");
+  const th0=document.createElement("th"); th0.textContent="";
+  trh.appendChild(th0);
+  for(let j=1;j<=n;j++){
+    const th=document.createElement("th"); th.textContent=j;
+    trh.appendChild(th);
+  }
+  thead.appendChild(trh);
+  table.appendChild(thead);
+
+  const tbody=document.createElement("tbody");
+  for(let i=1;i<=n;i++){
+    const tr=document.createElement("tr");
+    const th=document.createElement("th"); th.textContent=i;
+    tr.appendChild(th);
+    for(let j=1;j<=n;j++){
+      const td=document.createElement("td");
+      td.textContent = mat[i][j];
+      const cls = cellClassFn ? cellClassFn(i,j) : "";
+      if(cls) td.classList.add(cls);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  return table;
+}
+
+function renderMatrices(a){
+  const n=model.n;
+  const i=a.i, j=a.j;
+
+  const distShow=Array.from({length:n+1},()=>Array(n+1).fill(""));
+  const nxtShow =Array.from({length:n+1},()=>Array(n+1).fill(""));
+  for(let r=1;r<=n;r++){
+    for(let c=1;c<=n;c++){
+      distShow[r][c]=formatVal(a.dist[r][c]);
+      nxtShow[r][c]=(a.nxt[r][c]===-1? "—" : a.nxt[r][c]);
+    }
+  }
+
+  const distWrap=document.getElementById("distWrap");
+  const nextWrap=document.getElementById("nextWrap");
+  distWrap.innerHTML=""; nextWrap.innerHTML="";
+
+  const distTable = buildMatrixTable(distShow,n,(r,c)=>{
+    if(r===i && c===j){
+      return a.updated ? "cellUpd" : "cellHi";
+    }
+    return "";
+  });
+  const nextTable = buildMatrixTable(nxtShow,n,(r,c)=>{
+    if(r===i && c===j){
+      return a.updated ? "cellUpd" : "cellHi";
+    }
+    return "";
+  });
+
+  distWrap.appendChild(distTable);
+  nextWrap.appendChild(nextTable);
+}
+
+/* ---------- Path reconstruction ---------- */
+function getPathFromNext(nxt, a, b){
+  if(a<1||a>model.n||b<1||b>model.n) return null;
+  if(nxt[a][b]===-1) return null;
+  const path=[a];
+  let cur=a;
+  for(let guard=0; guard<model.n+5; guard++){
+    if(cur===b) break;
+    cur=nxt[cur][b];
+    if(cur===-1) return null;
+    path.push(cur);
+  }
+  if(path[path.length-1]!==b) return null;
+  return path;
+}
+
+function highlightPath(path){
+  if(!path || path.length<2) return;
+  for(let t=0;t<path.length-1;t++){
+    const u=path[t], v=path[t+1];
+    const el=findDrawnEdge(u,v);
+    if(el){
+      el.classList.add("path");
+      el.setAttribute("marker-end","url(#arrowPath)"); // arrows ONLY on path
+    }
+  }
+}
+
+/* ---------- Output ---------- */
+function buildOutput(last){
+  const n=model.n;
+  let out = `Floyd–Warshall APSP\n`;
+  out += `Directed: ${model.directed ? "YES" : "NO (undirected)"}\n`;
+  let neg=false;
+  for(let i=1;i<=n;i++) if(last.dist[i][i] < 0) neg=true;
+  out += `Negative cycle: ${neg ? "YES" : "NO"}\n\n`;
+
+  out += `dist matrix:\n`;
+  for(let i=1;i<=n;i++){
+    let row=[];
+    for(let j=1;j<=n;j++){
+      row.push(formatVal(last.dist[i][j]).padStart(3," "));
+    }
+    out += row.join(" ") + "\n";
+  }
+
+  const a=parseInt(document.getElementById("aNode").value,10);
+  const b=parseInt(document.getElementById("bNode").value,10);
+  out += `\nQuery path a→b: a=${a}, b=${b}\n`;
+  const path=getPathFromNext(last.nxt,a,b);
+  out += path ? `path: ${path.join(" - ")}\n` : "path: (không có)\n";
+  if(path) out += `distance: ${formatVal(last.dist[a][b])}\n`;
+  return out.trimEnd();
+}
+
+/* ---------- NEW: formula box rendering ---------- */
+function renderFormulaBox(a){
+  const box=document.getElementById("formulaBox");
+  const k=a.k, i=a.i, j=a.j;
+
+  // Only meaningful on check/update
+  if(!(a.type==="check" || a.type==="update")){
+    if(a.type==="k_start") {
+      box.innerHTML =
+        `<b>Layer k=${a.k}</b>\n`+
+        `Bắt đầu xét trung gian k=${a.k}.\n`+
+        `Công thức sẽ dùng: dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])`;
+      return;
+    }
+    if(a.type==="k_end") {
+      box.innerHTML =
+        `<b>Layer k=${a.k}</b>\n`+
+        `<span class="tagOk">Hoàn thành</span> lớp k=${a.k}. Ma trận dist/next đã cập nhật xong.`;
+      return;
+    }
+    box.innerHTML =
+      `Công thức: <b>dist[i][j]</b> = min(dist[i][j], <b>dist[i][k]</b> + <b>dist[k][j]</b>)\n`+
+      `Hãy Step/Play để xem từng phép kiểm tra (i,j) hoặc bật “Chỉ chạy theo lớp k”.`;
+    return;
+  }
+
+  const dik = a.dik;
+  const dkj = a.dkj;
+  const dij = a.dij;
+  const nd  = a.nd;
+
+  const dikS = (dik===undefined) ? "—" : formatVal(dik);
+  const dkjS = (dkj===undefined) ? "—" : formatVal(dkj);
+  const dijS = (dij===undefined) ? "—" : formatVal(dij);
+
+  let ndS="—";
+  let status="";
+  if(dik!==undefined && dkj!==undefined && dik<INF/2 && dkj<INF/2){
+    ndS = String(dik + dkj);
+    if(a.type==="update"){
+      status = `<span class="tagOk">UPDATE</span> vì ${ndS} < ${dijS}`;
+    }else{
+      status = `<span class="tagSkip">SKIP</span> (chỉ kiểm tra)`;
+    }
+  }else{
+    status = `<span class="tagNo">NO PATH</span> (dist[i][k] hoặc dist[k][j] = ∞)`;
+  }
+
+  box.innerHTML =
+    `<b>k=${k}, i=${i}, j=${j}</b>\n`+
+    `dist[i][k] = dist[${i}][${k}] = <b>${dikS}</b>\n`+
+    `dist[k][j] = dist[${k}][${j}] = <b>${dkjS}</b>\n`+
+    `dist[i][j] (old) = dist[${i}][${j}] = <b>${dijS}</b>\n`+
+    `nd = dist[i][k] + dist[k][j] = <b>${ndS}</b>\n`+
+    `${status}`;
+}
+
+/* ---------- Render action ---------- */
+function renderAction(i){
+  idx = Math.max(0, Math.min(i, actions.length-1));
+  const a = actions[idx];
+
+  document.getElementById("stepIdx").textContent = idx;
+  document.getElementById("stepTotal").textContent = Math.max(0, actions.length-1);
+
+  document.getElementById("kLabel").textContent = a.k===-1 ? "—" : a.k;
+  document.getElementById("iLabel").textContent = a.i===-1 ? "—" : a.i;
+  document.getElementById("jLabel").textContent = a.j===-1 ? "—" : a.j;
+  document.getElementById("actionLabel").textContent = a.type;
+
+  clearHighlights();
+
+  // highlight nodes i,j,k if available
+  if(a.k!==-1) document.getElementById(nodeId(a.k)).querySelector("circle").classList.add("active");
+  if(a.i!==-1) document.getElementById(nodeId(a.i)).querySelector("circle").classList.add("active");
+  if(a.j!==-1) document.getElementById(nodeId(a.j)).querySelector("circle").classList.add("active");
+
+  // highlight relevant edges only for check/update
+  if(a.type==="check" || a.type==="update"){
+    const e1=findDrawnEdge(a.i,a.k);
+    const e2=findDrawnEdge(a.k,a.j);
+    const e3=findDrawnEdge(a.i,a.j);
+    for(const el of [e1,e2,e3]){
+      if(el){
+        el.classList.add("highlight");
+        if(model.directed) el.setAttribute("marker-end","url(#arrowHi)");
+        else el.removeAttribute("marker-end");
+      }
+    }
+  }
+
+  renderFormulaBox(a);
+  renderMatrices(a);
+
+  const log=document.getElementById("log");
+  log.textContent = actions.slice(0, idx+1).map((x,k)=>`${String(k).padStart(3,'0')}: ${x.msg}`).join("\n");
+  log.scrollTop = log.scrollHeight;
+
+  const last = actions[actions.length-1];
+  const A=parseInt(document.getElementById("aNode").value,10);
+  const B=parseInt(document.getElementById("bNode").value,10);
+  const path=getPathFromNext(last.nxt,A,B);
+
+  const pathBox=document.getElementById("pathBox");
+  pathBox.textContent = path ? `Path: ${path.join(" - ")}\nDistance: ${formatVal(last.dist[A][B])}` : "Path: (không có)";
+
+  if(path) highlightPath(path);
+
+  document.getElementById("outputBox").textContent = buildOutput(last);
+
+  // keep k-only position in sync
+  if(document.getElementById("kOnly").checked){
+    const p = kOnlyIndices.indexOf(idx);
+    if(p>=0) kOnlyPos=p;
+  }
+}
+
+/* ---------- NEW: build k-only index list ---------- */
+function rebuildKOnlyIndices(){
+  kOnlyIndices=[];
+  for(let t=0;t<actions.length;t++){
+    if(actions[t].type==="k_end" || actions[t].type==="init" || actions[t].type==="done"){
+      kOnlyIndices.push(t);
+    }
+  }
+  // ensure init at 0
+  if(kOnlyIndices.length===0 || kOnlyIndices[0]!==0) kOnlyIndices.unshift(0);
+  // find closest position
+  let best=0;
+  for(let p=0;p<kOnlyIndices.length;p++){
+    if(kOnlyIndices[p] <= idx) best=p;
+    else break;
+  }
+  kOnlyPos=best;
+}
+
+/* ---------- Playback ---------- */
+function pauseAll(){
+  playing=false; lectureMode=false; waitingContinue=false; continueRequested=false;
+  document.getElementById("btnPlay").textContent="▶ Play";
+  document.getElementById("btnAuto").textContent="🎓 Auto Demo";
+  document.getElementById("btnCont").disabled=true;
+  if(timerPlay){ clearTimeout(timerPlay); timerPlay=null; }
+}
+
+function nextIndexStep(){
+  const kOnly=document.getElementById("kOnly").checked;
+  if(!kOnly) return Math.min(actions.length-1, idx+1);
+
+  // jump to next k_end snapshot
+  if(!kOnlyIndices.length) rebuildKOnlyIndices();
+  if(kOnlyPos < kOnlyIndices.length-1) kOnlyPos++;
+  return kOnlyIndices[kOnlyPos];
+}
+
+function playNormal(){
+  if(playing) return;
+  pauseAll();
+  playing=true;
+  document.getElementById("btnPlay").textContent="⏸ Pause";
+  tickNormal();
+}
+function tickNormal(){
+  if(!playing) return;
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(620/sp);
+  timerPlay=setTimeout(()=>{
+    const next = nextIndexStep();
+    if(next > idx){
+      renderAction(next);
+      tickNormal();
+    }else{
+      pauseAll();
+    }
+  }, delay);
+}
+
+function startAutoDemo(){
+  if(lectureMode) return;
+  pauseAll();
+  lectureMode=true;
+  document.getElementById("btnAuto").textContent="⏸ Stop Auto Demo";
+  tickAuto();
+}
+function tickAuto(){
+  if(!lectureMode) return;
+
+  if(waitingContinue && !continueRequested){
+    timerPlay=setTimeout(tickAuto, 80);
+    return;
+  }
+  if(continueRequested){
+    continueRequested=false;
+    waitingContinue=false;
+    document.getElementById("btnCont").disabled=true;
+  }
+
+  const sp=parseFloat(document.getElementById("speed").value);
+  const delay=Math.round(560/sp);
+
+  timerPlay=setTimeout(()=>{
+    const next = nextIndexStep();
+    if(next <= idx){ pauseAll(); return; }
+
+    const nextAction = actions[next];
+    renderAction(next);
+
+    const pUpd=document.getElementById("pauseOnUpdate").checked;
+    // In k-only mode, pause on update is less meaningful; keep it only in normal mode.
+    if(!document.getElementById("kOnly").checked && nextAction && pUpd && nextAction.type==="update"){
+      waitingContinue=true;
+      document.getElementById("btnCont").disabled=false;
+      return;
+    }
+    tickAuto();
+  }, delay);
+}
+
+/* ---------- Run/reset ---------- */
+function runFromInput(){
+  pauseAll();
+  showErr("");
+  try{
+    const parsed=parseInput(document.getElementById("inputArea").value);
+    model = { ...parsed, pos: layoutCircle(parsed.n) };
+    drawGraph();
+    actions = floydActions();
+    idx=0;
+    rebuildKOnlyIndices();
+    renderAction(0);
+  }catch(err){
+    showErr(err.message || String(err));
+  }
+}
+function resetToStart(){
+  pauseAll();
+  if(actions.length){
+    idx=0;
+    rebuildKOnlyIndices();
+    renderAction(0);
+  }
+}
+
+/* ---------- UI wiring ---------- */
+document.getElementById("speed").addEventListener("input", e=>{
+  document.getElementById("speedText").textContent = `${parseFloat(e.target.value).toFixed(1)}x`;
+});
+document.getElementById("btnRun").addEventListener("click", runFromInput);
+document.getElementById("btnLoadSample").addEventListener("click", ()=>{
+  document.getElementById("inputArea").value = SAMPLE;
+  runFromInput();
+});
+document.getElementById("dirDirected").addEventListener("change", runFromInput);
+document.getElementById("dirUndirected").addEventListener("change", runFromInput);
+document.getElementById("sortAdj").addEventListener("change", runFromInput);
+
+document.getElementById("aNode").addEventListener("input", ()=>{ if(actions.length) renderAction(idx); });
+document.getElementById("bNode").addEventListener("input", ()=>{ if(actions.length) renderAction(idx); });
+
+document.getElementById("kOnly").addEventListener("change", ()=>{
+  rebuildKOnlyIndices();
+  // snap idx to current k-only anchor if enabled
+  if(document.getElementById("kOnly").checked){
+    renderAction(kOnlyIndices[kOnlyPos]);
+  }else{
+    renderAction(idx);
+  }
+});
+
+document.getElementById("btnStep").addEventListener("click", ()=>{
+  pauseAll();
+  const next = nextIndexStep();
+  if(next > idx) renderAction(next);
+});
+document.getElementById("btnReset").addEventListener("click", resetToStart);
+
+document.getElementById("btnPlay").addEventListener("click", ()=>{
+  if(playing){ pauseAll(); return; }
+  playNormal();
+});
+document.getElementById("btnAuto").addEventListener("click", ()=>{
+  if(lectureMode){ pauseAll(); return; }
+  startAutoDemo();
+});
+document.getElementById("btnCont").addEventListener("click", ()=>{
+  if(!lectureMode) return;
+  continueRequested=true;
+});
+
+/* init */
+runFromInput();
+</script>
+</body>
+</html>

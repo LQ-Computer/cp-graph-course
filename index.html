@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Bồi dưỡng HSG Tin học: Chuyên đề đồ thị</title>
+  <style>
+    :root{
+      --bg:#ffffff; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#e2e8f0;
+      --accent:#0ea5e9; --shadow:0 8px 26px rgba(2,6,23,.08); --radius:18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--ink)}
+    header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.92);
+      backdrop-filter:saturate(1.3) blur(10px);border-bottom:1px solid var(--line);}
+    .wrap{max-width:1180px;margin:0 auto;padding:14px 16px}
+    .top{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    h1{margin:0;font-size:18px;letter-spacing:.2px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--line);
+      border-radius:999px;color:var(--muted);font-weight:800;font-size:12px;background:#fff}
+    .pill b{color:var(--ink)}
+    .grid{display:grid;grid-template-columns:360px 1fr;gap:14px;align-items:start}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+      box-shadow:var(--shadow);overflow:hidden}
+    .card h2{margin:0;padding:12px 14px;font-size:13px;border-bottom:1px solid var(--line);background:#f8fafc}
+    .card .bd{padding:12px 14px}
+
+    .btn{appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink);
+      border-radius:12px;padding:9px 10px;font-weight:900;cursor:pointer;
+      transition:transform .06s ease, box-shadow .15s ease, border-color .15s ease;text-align:left;width:100%;}
+    .btn:hover{border-color:#cbd5e1;box-shadow:0 8px 22px rgba(2,6,23,.08)}
+    .btn:active{transform:translateY(1px)}
+    .btn .t{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .tag{font-size:11px;color:#0f172a;background:#e0f2fe;border:1px solid #bae6fd;border-radius:999px;padding:3px 8px}
+    .tag.g{background:#dcfce7;border-color:#bbf7d0}
+    .tag.y{background:#fef9c3;border-color:#fde68a}
+    .sub{color:var(--muted);font-size:12px;line-height:1.5;margin-top:6px}
+    .viewerTop{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+    select{padding:9px 10px;border-radius:12px;border:1px solid var(--line);font-weight:900}
+    iframe{width:100%;height:74vh;border:1px solid var(--line);border-radius:14px;background:white}
+    .hint{font-size:12px;color:var(--muted);line-height:1.5}
+    .mono{font-family:var(--mono)}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <h1>📘 Bồi dưỡng HSG Tin học: Chuyên đề đồ thị</h1>
+
+    <span class="pill">Giáo viên: <b>Ths. Lê Quyền - THPT Nguyễn Du - Đắk Lắk</b></span>
+
+  </div>
+</header>
+
+<main class="wrap grid">
+  <section class="card">
+    <h2>📚 Nội dung & mô phỏng</h2>
+    <div class="bd" style="display:grid;gap:10px">
+      <div class="hint"><b>Nội dung:</b></div>
+      <button class="btn" onclick="openInViewer('lesson/do-thi-cp_giangbai_full_light_v2_advanced.html')">
+        <div class="t"><span>Giáo án tổng hợp (Khái niệm + bẫy + test + code C++)</span><span class="tag g">Lesson</span></div>
+
+      </button>
+
+      <div class="hint"><b>Mô phỏng (Interactive):</b></div>
+
+      <button class="btn" onclick="openInViewer('sim/bfs_interactive.html')"><div class="t"><span>BFS (Queue)</span><span class="tag">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/dfs_interactive.html')"><div class="t"><span>DFS</span><span class="tag">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/dijkstra_interactive.html')"><div class="t"><span>Dijkstra</span><span class="tag y">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/bellman_ford_interactive.html')"><div class="t"><span>Bellman–Ford</span><span class="tag y">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/floyd_warshall_interactive.html')"><div class="t"><span>Floyd–Warshall</span><span class="tag y">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/prim_mst_interactive.html')"><div class="t"><span>Prim MST</span><span class="tag">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/kruskal_mst_interactive.html')"><div class="t"><span>Kruskal MST</span><span class="tag">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/TT_Long_flood_fill_interactive.html')"><div class="t"><span>Flood Fill</span><span class="tag">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/fenwick_bit_interactive.html')"><div class="t"><span>Fenwick (BIT)</span><span class="tag g">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/segment_tree_interactive.html')"><div class="t"><span>Segment Tree</span><span class="tag g">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/segment_tree_lazy_interactive.html')"><div class="t"><span>SegTree Lazy</span><span class="tag g">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/trie_interactive.html')"><div class="t"><span>Trie</span><span class="tag g">Sim</span></div></button>
+      <button class="btn" onclick="openInViewer('sim/sparse_table_rmq_interactive.html')"><div class="t"><span>Sparse Table (RMQ)</span><span class="tag g">Sim</span></div></button>
+
+      <div class="hint" style="margin-top:8px">
+        <b>Giáo viên: </b> Ths. Lê Quyền - THPT Nguyễn Du - Đắk Lắk.
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>🖥️ Khung xem</h2>
+    <div class="bd">
+      <div class="viewerTop">
+        <label style="font-weight:900">Chọn nhanh:</label>
+        <select id="sel">
+          <option value="lesson/do-thi-cp_giangbai_full_light_v2_advanced.html">Giáo án tổng hợp</option>
+          <optgroup label="Đồ thị">
+            <option value="sim/bfs_interactive.html">BFS</option>
+            <option value="sim/dfs_interactive.html">DFS</option>
+            <option value="sim/dijkstra_interactive_final.html">Dijkstra</option>
+            <option value="sim/bellman_ford_interactive.html">Bellman–Ford</option>
+            <option value="sim/floyd_warshall_interactive.html">Floyd–Warshall</option>
+            <option value="sim/prim_mst_interactive.html">Prim MST</option>
+            <option value="sim/kruskal_mst_interactive.html">Kruskal MST</option>
+            <option value="sim/TT_Long_flood_fill_interactive.html">Flood Fill</option>
+          </optgroup>
+          <optgroup label="Cấu trúc dữ liệu">
+            <option value="sim/fenwick_bit_interactive.html">Fenwick (BIT)</option>
+            <option value="sim/segment_tree_interactive.html">Segment Tree</option>
+            <option value="sim/segment_tree_lazy_interactive.html">SegTree Lazy</option>
+            <option value="sim/trie_interactive.html">Trie</option>
+            <option value="sim/sparse_table_rmq_interactive.html">Sparse Table (RMQ)</option>
+          </optgroup>
+        </select>
+        <button class="btn" style="width:auto" onclick="openNewTab()">Mở tab mới</button>
+        <span class="hint">Đang xem: <span class="mono" id="cur">—</span></span>
+      </div>
+
+      <iframe id="frame" title="Viewer" loading="lazy"></iframe>
+
+      <div class="hint" style="margin-top:10px">
+        <b>Giáo viên: </b> Ths. Lê Quyền - THPT Nguyễn Du - Đắk Lắk.
+
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  const frame = document.getElementById('frame');
+  const sel = document.getElementById('sel');
+  const cur = document.getElementById('cur');
+
+  function openInViewer(path){
+    sel.value = path;
+    frame.src = path;
+    cur.textContent = path;
+    frame.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function openNewTab(){
+    const path = sel.value || frame.src;
+    window.open(path, '_blank');
+  }
+  sel.addEventListener('change', ()=>openInViewer(sel.value));
+  openInViewer(sel.value);
+</script>
+</body>
+</html>
